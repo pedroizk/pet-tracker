@@ -1,3 +1,8 @@
 server.exe
 *.exe
 
+# Documentação e arquivos relacionados ao Claude
+docs/
+CLAUDE.md
+.claude/
+

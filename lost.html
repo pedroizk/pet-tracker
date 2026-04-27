@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Pet perdido — Pet Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; font-family: system-ui, sans-serif; background: #f6f7f9; }
+    #wrap { display: flex; flex-direction: column; height: 100%; }
+
+    header {
+      background: #2a7; color: white;
+      padding: 12px 18px;
+      display: flex; align-items: center; gap: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    header .emoji { font-size: 32px; line-height: 1; }
+    header .info { flex: 1; min-width: 0; }
+    header h1 { margin: 0; font-size: 16px; font-weight: 700; }
+    header .sub { font-size: 12px; opacity: 0.92; margin-top: 2px; }
+
+    #map { flex: 1; position: relative; background: #d7d8db; }
+    #map .loading {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      color: #555; font-size: 14px;
+      pointer-events: none;
+    }
+
+    footer {
+      background: #f6f7f9; border-top: 1px solid #e0e0e0;
+      padding: 8px 14px;
+      font-size: 11px; color: #666;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    footer .pulse { display: inline-block; width: 8px; height: 8px; background: #2a7; border-radius: 50%; margin-right: 6px; animation: live 1.4s ease-in-out infinite; }
+    @keyframes live { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+    .pet-marker-label {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid #c0392b;
+      font-size: 13px; font-weight: 700;
+      white-space: nowrap;
+      color: #c0392b;
+    }
+
+    #notfound, #empty {
+      flex: 1;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 32px; text-align: center;
+      color: #555;
+    }
+    #notfound .icon, #empty .icon { font-size: 64px; margin-bottom: 14px; }
+    #notfound h2, #empty h2 { font-size: 20px; color: #333; margin: 0 0 6px; }
+    #notfound p, #empty p { font-size: 13px; color: #666; margin: 0; max-width: 320px; }
+  </style>
+</head>
+<body>
+
+<div id="wrap">
+  <header id="header" style="display:none;">
+    <span class="emoji" id="hd-emoji">🐾</span>
+    <div class="info">
+      <h1 id="hd-title">Pet perdido</h1>
+      <div class="sub" id="hd-sub">—</div>
+    </div>
+  </header>
+
+  <div id="map" style="display:none;">
+    <div class="loading" id="map-loading">Carregando posição…</div>
+  </div>
+
+  <footer id="footer" style="display:none;">
+    <span><span class="pulse"></span>Atualiza a cada 10s</span>
+    <span id="last-fetch">—</span>
+  </footer>
+
+  <div id="notfound" style="display:none;">
+    <div class="icon">🚫</div>
+    <h2>Esse link expirou ou não existe</h2>
+    <p>O dono pode ter marcado o pet como encontrado, ou o link foi digitado errado.</p>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  const speciesIcon = { dog: '🐶', cat: '🐱' };
+  const POLL_MS = 10000;
+  const HISTORY_MAX = 100;
+
+  const token = window.location.pathname.split('/').filter(Boolean).pop();
+
+  let map = null;
+  let marker = null;
+  let trail = null;
+
+  function show(id) { document.getElementById(id).style.display = ''; }
+  function hide(id) { document.getElementById(id).style.display = 'none'; }
+
+  function showNotFound() {
+    hide('header'); hide('map'); hide('footer');
+    show('notfound');
+  }
+
+  function ensureMap(lat, lon) {
+    if (map) return;
+    const mapEl = document.getElementById('map');
+    map = L.map(mapEl).setView([lat, lon], 17);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19, attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+    document.getElementById('map-loading').remove();
+  }
+
+  function fmtTime(iso) {
+    try {
+      const d = new Date(iso);
+      return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    } catch (_) { return '—'; }
+  }
+
+  function renderHeader(state) {
+    const pet = state.pet;
+    document.getElementById('hd-emoji').textContent = speciesIcon[pet.species] || '🐾';
+    document.getElementById('hd-title').textContent = `${pet.name} foi visto(a) por último às ${fmtTime(state.position && state.position.timestamp)}`;
+    const since = pet.lost_since ? `Perdido(a) desde ${fmtTime(pet.lost_since)}` : 'Pet em modo perdido';
+    document.getElementById('hd-sub').textContent = since;
+    document.title = `${pet.name} perdido(a) — Pet Tracker`;
+    show('header');
+  }
+
+  function renderState(state) {
+    const pos = state.position;
+    if (!pos || (pos.latitude === 0 && pos.longitude === 0)) {
+      // pet sem posição ainda
+      document.getElementById('map').style.display = '';
+      document.getElementById('map-loading').textContent = 'Sem dados de localização ainda';
+      return;
+    }
+    show('map');
+    ensureMap(pos.latitude, pos.longitude);
+
+    const latlng = [pos.latitude, pos.longitude];
+    if (!marker) {
+      marker = L.marker(latlng, {
+        icon: L.divIcon({
+          html: `<div style="font-size:32px;line-height:32px;">${speciesIcon[state.pet.species] || '🐾'}</div>`,
+          className: 'lost-icon',
+          iconSize: [36, 36], iconAnchor: [18, 18]
+        })
+      }).addTo(map).bindTooltip(state.pet.name, {
+        permanent: true, direction: 'top',
+        className: 'pet-marker-label', offset: [0, -16]
+      });
+    } else {
+      marker.setLatLng(latlng);
+    }
+
+    const points = (state.history || []).slice(-HISTORY_MAX).map(p => [p.latitude, p.longitude]);
+    if (!trail) {
+      trail = L.polyline(points, { color: '#c0392b', weight: 4, opacity: 0.85 }).addTo(map);
+    } else {
+      trail.setLatLngs(points);
+    }
+
+    document.getElementById('last-fetch').textContent = `Última atualização: ${fmtTime(new Date().toISOString())}`;
+    show('footer');
+  }
+
+  async function poll() {
+    try {
+      const res = await fetch(`/lost/${token}/state`, { cache: 'no-store' });
+      if (res.status === 404) {
+        showNotFound();
+        return false;
+      }
+      if (!res.ok) {
+        console.warn('lost state error', res.status);
+        return true;
+      }
+      const state = await res.json();
+      renderHeader(state);
+      renderState(state);
+      return true;
+    } catch (e) {
+      console.error(e);
+      return true;
+    }
+  }
+
+  (async () => {
+    if (!token) {
+      showNotFound();
+      return;
+    }
+    const ok = await poll();
+    if (!ok) return;
+    setInterval(poll, POLL_MS);
+  })();
+</script>
+
+</body>
+</html>

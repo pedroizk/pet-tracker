@@ -9,7 +9,7 @@
     html, body { margin: 0; padding: 0; height: 100%; font-family: system-ui, sans-serif; }
     #app { display: flex; height: 100%; }
     #sidebar {
-      width: 280px;
+      width: 320px;
       background: #f6f7f9;
       border-right: 1px solid #ddd;
       padding: 14px;
@@ -18,7 +18,7 @@
     }
     #sidebar h1 { font-size: 16px; margin: 0 0 10px; }
     #sidebar h2 { font-size: 13px; margin: 16px 0 6px; color: #555; text-transform: uppercase; letter-spacing: 0.5px; }
-    #map { flex: 1; }
+    #map { flex: 1; position: relative; }
     form#new-pet { display: flex; flex-direction: column; gap: 6px; }
     form#new-pet input, form#new-pet select, form#new-pet button {
       padding: 6px 8px; font-size: 13px; border: 1px solid #ccc; border-radius: 4px;
@@ -27,13 +27,94 @@
       background: #2a7; color: white; border-color: #2a7; cursor: pointer; font-weight: 600;
     }
     form#new-pet button:hover { background: #239065; }
+
     .pet-row {
-      display: flex; align-items: center; gap: 8px;
-      padding: 6px 4px; border-bottom: 1px solid #eee; font-size: 13px;
+      display: grid;
+      grid-template-columns: 26px 1fr auto;
+      gap: 6px;
+      align-items: center;
+      padding: 8px 4px;
+      border-bottom: 1px solid #eee;
+      font-size: 13px;
     }
-    .pet-row .icon { font-size: 18px; }
-    .pet-row .name { flex: 1; font-weight: 600; }
-    .pet-row .step { color: #888; font-size: 11px; }
+    .pet-row .icon { font-size: 20px; }
+    .pet-row .meta { display: flex; flex-direction: column; }
+    .pet-row .name { font-weight: 600; }
+    .pet-row .sub { color: #888; font-size: 11px; }
+    .pet-row .badge {
+      display: inline-block; padding: 2px 6px; border-radius: 10px; font-size: 11px;
+      font-weight: 600; min-width: 50px; text-align: center;
+    }
+    .badge.inside  { background: #d6f5e3; color: #207244; }
+    .badge.outside { background: #fde0e0; color: #a83232; }
+    .badge.unknown { background: #eee;    color: #666;    }
+    .badge.lost    { background: #fde0e0; color: #c0392b; animation: lost-pulse 1.6s ease-in-out infinite; }
+
+    .pet-row.lost { border-left: 3px solid #e74c3c; padding-left: 6px; }
+
+    @keyframes lost-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.55); }
+      70%      { box-shadow: 0 0 0 6px rgba(231, 76, 60, 0); }
+    }
+
+    .pet-row .actions { grid-column: 2 / -1; display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+    .pet-row .actions button {
+      font-size: 11px; padding: 3px 6px; border: 1px solid #bbb; background: white;
+      border-radius: 3px; cursor: pointer;
+    }
+    .pet-row .actions button:hover { background: #f0f0f0; }
+    .pet-row .actions button.danger { color: #a83232; border-color: #d8a; }
+    .pet-row .actions button.warn   { color: #cf6d10; border-color: #e67e22; background: #fff; }
+    .pet-row .actions button.warn:hover { background: #fdebd0; }
+    .pet-row .actions button.success { color: #1f6e54; border-color: #2a7; background: #fff; }
+    .pet-row .actions button.success:hover { background: #d6f5e3; }
+
+    /* Modal "pet perdido" — reaproveita estilos de #help-overlay */
+    #lost-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+      display: none; align-items: center; justify-content: center;
+      z-index: 2000;
+      backdrop-filter: blur(2px);
+    }
+    #lost-overlay.open { display: flex; animation: help-fade 0.18s ease; }
+    #lost-modal {
+      background: white; border-radius: 14px;
+      width: 92%; max-width: 480px;
+      box-shadow: 0 18px 48px rgba(0,0,0,0.32);
+      padding: 28px 28px 20px;
+      position: relative;
+    }
+    #lost-modal .close {
+      position: absolute; top: 10px; right: 14px;
+      background: transparent; border: 0; font-size: 24px;
+      color: #aaa; cursor: pointer; line-height: 1;
+    }
+    #lost-modal .close:hover { color: #333; }
+    #lost-modal h2 { margin: 0 0 6px; font-size: 19px; color: #c0392b; }
+    #lost-modal h2 .emoji { margin-right: 8px; }
+    #lost-modal p { margin: 0 0 10px; font-size: 13px; color: #555; }
+    #lost-modal .url-box {
+      display: block; width: 100%; box-sizing: border-box;
+      padding: 10px 12px; margin: 10px 0;
+      background: #f6f7f9; border: 1px solid #ddd; border-radius: 6px;
+      font-family: monospace; font-size: 12px;
+      word-break: break-all;
+    }
+    #lost-modal .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    #lost-modal .actions button {
+      flex: 1; min-width: 130px; padding: 10px 12px;
+      font-size: 13px; font-weight: 600;
+      border-radius: 6px; cursor: pointer;
+      border: 1px solid #ddd; background: white; color: #333;
+    }
+    #lost-modal .actions button:hover { background: #f0f0f0; }
+    #lost-modal .actions button.primary {
+      background: #25d366; color: white; border-color: #25d366;
+    }
+    #lost-modal .actions button.primary:hover { background: #1da851; }
+    #lost-modal .actions button.copy.ok { background: #d6f5e3; color: #207244; border-color: #2a7; }
+    #lost-modal .err { color: #a83232; background: #fde0e0; padding: 8px; border-radius: 4px; font-size: 12px; }
+
     .pet-marker-label {
       background: rgba(255, 255, 255, 0.92);
       padding: 2px 6px;
@@ -43,6 +124,174 @@
       font-weight: 600;
       white-space: nowrap;
     }
+
+    #zone-hint {
+      position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+      background: rgba(45, 50, 60, 0.92); color: white;
+      padding: 8px 14px; border-radius: 6px; font-size: 13px;
+      z-index: 1000; box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      display: none;
+    }
+    #zone-hint button {
+      margin-left: 10px; background: transparent; color: white; border: 1px solid #999;
+      border-radius: 3px; padding: 2px 8px; cursor: pointer; font-size: 12px;
+    }
+
+    #alerts {
+      position: absolute; top: 78px; right: 12px;
+      display: flex; flex-direction: column; gap: 6px;
+      z-index: 1100; max-width: 360px;
+    }
+
+    #help-btn {
+      position: absolute; top: 14px; right: 14px;
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #2a7 0%, #1f6e54 100%);
+      color: white; border: 0;
+      font-size: 24px; font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(42, 119, 89, 0.45);
+      z-index: 1200;
+      display: flex; align-items: center; justify-content: center;
+      transition: transform 0.15s ease, box-shadow 0.2s ease;
+    }
+    #help-btn::before {
+      content: '';
+      position: absolute; inset: -4px;
+      border-radius: 50%;
+      border: 3px solid #2a7;
+      opacity: 0;
+      pointer-events: none;
+    }
+    #help-btn.pulsing {
+      animation: help-bounce 1.6s ease-in-out infinite;
+    }
+    #help-btn.pulsing::before {
+      animation: help-ripple 1.6s ease-out infinite;
+    }
+    #help-btn:hover { transform: scale(1.08); box-shadow: 0 6px 18px rgba(42, 119, 89, 0.6); }
+    #help-btn:active { transform: scale(0.96); }
+
+    @keyframes help-bounce {
+      0%, 100% { box-shadow: 0 4px 14px rgba(42, 119, 89, 0.45); }
+      50%      { box-shadow: 0 4px 14px rgba(42, 119, 89, 0.45), 0 0 0 8px rgba(42, 119, 89, 0.18); }
+    }
+    @keyframes help-ripple {
+      0%   { opacity: 0.7; transform: scale(0.95); }
+      80%  { opacity: 0;   transform: scale(1.6);  }
+      100% { opacity: 0;   transform: scale(1.6);  }
+    }
+
+    #help-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+      display: none; align-items: center; justify-content: center;
+      z-index: 2000;
+      backdrop-filter: blur(2px);
+    }
+    #help-overlay.open { display: flex; animation: help-fade 0.18s ease; }
+    @keyframes help-fade { from { opacity: 0; } to { opacity: 1; } }
+
+    #help-modal {
+      background: white; border-radius: 14px;
+      width: 92%; max-width: 480px; min-height: 420px;
+      box-shadow: 0 18px 48px rgba(0,0,0,0.32);
+      position: relative;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    #help-modal .close {
+      position: absolute; top: 10px; right: 14px;
+      background: transparent; border: 0; font-size: 24px;
+      color: #aaa; cursor: pointer; line-height: 1; z-index: 5;
+    }
+    #help-modal .close:hover { color: #333; }
+
+    .help-slides {
+      flex: 1; position: relative;
+    }
+    .help-slide {
+      position: absolute; inset: 0;
+      padding: 36px 32px 24px;
+      display: flex; flex-direction: column; align-items: center; text-align: center;
+      opacity: 0; transform: translateX(20px); pointer-events: none;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+    .help-slide.active {
+      opacity: 1; transform: translateX(0); pointer-events: auto;
+    }
+    .help-slide .emoji {
+      font-size: 56px; line-height: 1;
+      width: 96px; height: 96px;
+      display: flex; align-items: center; justify-content: center;
+      background: #f1faf5; border-radius: 50%;
+      margin-bottom: 14px;
+    }
+    .help-slide h2 { font-size: 19px; margin: 0 0 6px; color: #222; }
+    .help-slide .summary { font-size: 13px; color: #666; margin: 0 0 16px; line-height: 1.5; max-width: 360px; }
+    .help-slide .steps {
+      list-style: none; padding: 0; margin: 0;
+      display: flex; flex-direction: column; gap: 8px;
+      width: 100%; max-width: 360px;
+    }
+    .help-slide .steps li {
+      display: flex; align-items: flex-start; gap: 10px;
+      text-align: left; font-size: 13px; color: #333; line-height: 1.45;
+      padding: 8px 12px; background: #f7f8fa; border-radius: 8px;
+    }
+    .help-slide .steps li .num {
+      flex-shrink: 0;
+      width: 22px; height: 22px; border-radius: 50%;
+      background: #2a7; color: white; font-weight: 700; font-size: 12px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .help-slide .badges {
+      display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
+      margin-top: 4px;
+    }
+    .help-slide .badges span {
+      padding: 3px 10px; border-radius: 12px;
+      font-size: 11px; font-weight: 600;
+    }
+
+    .help-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 18px; border-top: 1px solid #eee;
+      background: #fafbfc;
+    }
+    .help-nav button {
+      background: transparent; border: 1px solid #ddd;
+      border-radius: 6px; padding: 6px 14px;
+      font-size: 13px; cursor: pointer; color: #444; font-weight: 600;
+      transition: background 0.12s ease, color 0.12s ease;
+    }
+    .help-nav button:hover:not(:disabled) { background: #eef5f1; color: #2a7; border-color: #2a7; }
+    .help-nav button:disabled { opacity: 0.35; cursor: not-allowed; }
+    .help-nav button.primary {
+      background: #2a7; color: white; border-color: #2a7;
+    }
+    .help-nav button.primary:hover { background: #239065; }
+
+    .help-dots { display: flex; gap: 6px; }
+    .help-dots .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #ddd; cursor: pointer;
+      transition: background 0.15s ease, transform 0.15s ease;
+    }
+    .help-dots .dot.active { background: #2a7; transform: scale(1.3); }
+    .help-dots .dot:hover { background: #b9d6c8; }
+    .alert-banner {
+      background: #c0392b; color: white;
+      padding: 10px 14px; border-radius: 6px;
+      font-size: 13px; font-weight: 600;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .alert-banner .dismiss {
+      background: rgba(255,255,255,0.2); color: white; border: 0;
+      border-radius: 3px; padding: 2px 8px; cursor: pointer; font-size: 12px;
+    }
+    .alert-banner .dismiss:hover { background: rgba(255,255,255,0.35); }
   </style>
 </head>
 <body>
@@ -65,7 +314,108 @@
     <div id="pet-list"></div>
   </aside>
 
-  <div id="map"></div>
+  <div id="help-overlay" role="dialog" aria-modal="true" aria-labelledby="help-title">
+    <div id="help-modal">
+      <button class="close" id="help-close" aria-label="Fechar">×</button>
+
+      <div class="help-slides" id="help-slides">
+
+        <section class="help-slide active" data-slide="0">
+          <div class="emoji">🐾</div>
+          <h2 id="help-title">Bem-vindo ao Pet Tracker</h2>
+          <p class="summary">Acompanhe seus pets em tempo real e receba alertas quando saírem da zona segura.</p>
+          <ul class="steps">
+            <li><span class="num">1</span><span>Cadastre seu pet (cachorro ou gato).</span></li>
+            <li><span class="num">2</span><span>Defina uma zona segura no mapa.</span></li>
+            <li><span class="num">3</span><span>Receba alertas se ele sair dela.</span></li>
+          </ul>
+        </section>
+
+        <section class="help-slide" data-slide="1">
+          <div class="emoji">➕</div>
+          <h2>Adicionar um pet</h2>
+          <p class="summary">Use o formulário no painel lateral para cadastrar pets.</p>
+          <ul class="steps">
+            <li><span class="num">1</span><span>Digite o <b>nome</b> do pet.</span></li>
+            <li><span class="num">2</span><span>Escolha a <b>espécie</b>: 🐶 ou 🐱.</span></li>
+            <li><span class="num">3</span><span>Clique em <b>Adicionar</b> — pronto, ele aparece no mapa.</span></li>
+          </ul>
+        </section>
+
+        <section class="help-slide" data-slide="2">
+          <div class="emoji">🛡️</div>
+          <h2>Definir zona segura</h2>
+          <p class="summary">Em dois cliques no mapa você desenha uma zona de proteção para o pet.</p>
+          <ul class="steps">
+            <li><span class="num">1</span><span>Na linha do pet, clique em <b>Definir zona</b>.</span></li>
+            <li><span class="num">2</span><span><b>1º clique:</b> escolha o centro (ex.: sua casa).</span></li>
+            <li><span class="num">3</span><span><b>2º clique:</b> defina o raio. Mostra os metros em tempo real.</span></li>
+          </ul>
+        </section>
+
+        <section class="help-slide" data-slide="3">
+          <div class="emoji">⚠️</div>
+          <h2>Alertas em tempo real</h2>
+          <p class="summary">Quando o pet cruza a zona segura, três avisos disparam juntos.</p>
+          <ul class="steps">
+            <li><span class="num">🔴</span><span>Banner vermelho no topo do mapa.</span></li>
+            <li><span class="num">🔊</span><span>Beep no navegador (2 tons curtos).</span></li>
+            <li><span class="num">🔔</span><span>Notificação do sistema (autorize no 1º clique).</span></li>
+          </ul>
+        </section>
+
+        <section class="help-slide" data-slide="4">
+          <div class="emoji">📍</div>
+          <h2>Status e localização</h2>
+          <p class="summary">Cada pet tem um indicador colorido no painel.</p>
+          <div class="badges">
+            <span style="background:#d6f5e3;color:#207244;">🟢 dentro</span>
+            <span style="background:#fde0e0;color:#a83232;">🔴 fora</span>
+            <span style="background:#eee;color:#666;">sem zona</span>
+          </div>
+          <p class="summary" style="margin-top:14px;">Clique em <b>Localizar</b> na linha de um pet para centralizar o mapa nele.</p>
+        </section>
+
+        <section class="help-slide" data-slide="5">
+          <div class="emoji">🚨</div>
+          <h2>Pet perdido</h2>
+          <p class="summary">Marque o pet como perdido e gere um link público para divulgar nas redes.</p>
+          <ul class="steps">
+            <li><span class="num">1</span><span>Na linha do pet, clique em <b>🚨 Marcar como perdido</b>.</span></li>
+            <li><span class="num">2</span><span>Copie o link gerado e cole em grupos do WhatsApp.</span></li>
+            <li><span class="num">3</span><span>Quando achar, clique em <b>✅ Marcar como encontrado</b> — o link expira.</span></li>
+          </ul>
+        </section>
+
+      </div>
+
+      <div class="help-nav">
+        <button id="help-prev" type="button">← Anterior</button>
+        <div class="help-dots" id="help-dots"></div>
+        <button id="help-next" type="button" class="primary">Próximo →</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="map">
+    <div id="zone-hint"></div>
+    <div id="alerts"></div>
+    <button id="help-btn" type="button" class="pulsing" title="Como usar" aria-label="Como usar">?</button>
+  </div>
+
+  <div id="lost-overlay" role="dialog" aria-modal="true" aria-labelledby="lost-title">
+    <div id="lost-modal">
+      <button class="close" id="lost-close" aria-label="Fechar">×</button>
+      <h2 id="lost-title"><span class="emoji">🚨</span><span id="lost-pet-label">Pet</span> está marcado(a) como perdido(a)</h2>
+      <p>Compartilhe esse link com vizinhos para ajudar a achar:</p>
+      <code class="url-box" id="lost-url">aguardando…</code>
+      <div class="err" id="lost-err" style="display:none;"></div>
+      <div class="actions">
+        <button id="lost-copy" class="copy" type="button">📋 Copiar link</button>
+        <button id="lost-share" class="primary" type="button">Compartilhar no WhatsApp</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -86,7 +436,7 @@
   const speciesIcon = { dog: '🐶', cat: '🐱' };
   const trailColors = ['#c0392b', '#2980b9', '#8e44ad', '#16a085', '#d35400', '#27ae60', '#2c3e50'];
 
-  // pet_id -> { pet, marker, trail, lastStep }
+  // pet_id -> { pet, marker, trail, zoneCircle, lastStep }
   const pets = new Map();
 
   function makeIcon(species) {
@@ -103,15 +453,48 @@
   }
 
   function ensurePet(pet) {
-    if (pets.has(pet.id)) return pets.get(pet.id);
-    const marker = L.marker([initialLat, initialLng], { icon: makeIcon(pet.species) })
-      .addTo(map)
-      .bindTooltip(pet.name, { permanent: true, direction: 'top', className: 'pet-marker-label', offset: [0, -14] });
-    const trail = L.polyline([], { color: colorFor(pet.id), weight: 3, opacity: 0.85 }).addTo(map);
-    const entry = { pet, marker, trail, lastStep: -1 };
-    pets.set(pet.id, entry);
+    let entry = pets.get(pet.id);
+    if (!entry) {
+      const marker = L.marker([initialLat, initialLng], { icon: makeIcon(pet.species) })
+        .addTo(map)
+        .bindTooltip(pet.name, { permanent: true, direction: 'top', className: 'pet-marker-label', offset: [0, -14] });
+      const trail = L.polyline([], { color: colorFor(pet.id), weight: 3, opacity: 0.85 }).addTo(map);
+      entry = { pet, marker, trail, zoneCircle: null, lastStep: -1, outside: false };
+      pets.set(pet.id, entry);
+    } else {
+      entry.pet = pet;
+    }
+    syncZone(entry);
     renderPetList();
     return entry;
+  }
+
+  function syncZone(entry) {
+    const z = entry.pet.safe_zone;
+    if (entry.zoneCircle) {
+      map.removeLayer(entry.zoneCircle);
+      entry.zoneCircle = null;
+    }
+    if (z) {
+      entry.zoneCircle = L.circle([z.center_lat, z.center_lon], {
+        radius: z.radius_meters,
+        color: colorFor(entry.pet.id),
+        weight: 2,
+        opacity: 0.7,
+        fillColor: colorFor(entry.pet.id),
+        fillOpacity: 0.12
+      }).addTo(map);
+    }
+  }
+
+  function statusBadge(entry) {
+    const parts = [];
+    if (entry.pet.lost) parts.push(`<span class="badge lost">PERDIDO</span>`);
+    if (!entry.pet.safe_zone) parts.push(`<span class="badge unknown">sem zona</span>`);
+    else parts.push(entry.outside
+      ? `<span class="badge outside">🔴 fora</span>`
+      : `<span class="badge inside">🟢 dentro</span>`);
+    return parts.join(' ');
   }
 
   function renderPetList() {
@@ -119,31 +502,308 @@
     container.innerHTML = '';
     [...pets.values()]
       .sort((a, b) => a.pet.id - b.pet.id)
-      .forEach(({ pet, lastStep }) => {
+      .forEach((entry) => {
+        const { pet, lastStep } = entry;
         const row = document.createElement('div');
-        row.className = 'pet-row';
+        row.className = 'pet-row' + (pet.lost ? ' lost' : '');
+        const lostBtn = pet.lost
+          ? `<button data-act="found" class="success">✅ Marcar como encontrado</button>`
+          : `<button data-act="lost" class="warn">🚨 Marcar como perdido</button>`;
         row.innerHTML = `
           <span class="icon">${speciesIcon[pet.species] || '🐾'}</span>
-          <span class="name">${pet.name}</span>
-          <span class="step">passo ${lastStep < 0 ? '—' : lastStep}</span>
+          <span class="meta">
+            <span class="name">${escapeHTML(pet.name)}</span>
+            <span class="sub">passo ${lastStep < 0 ? '—' : lastStep}</span>
+          </span>
+          <span class="status">${statusBadge(entry)}</span>
+          <span class="actions">
+            <button data-act="pan">Localizar</button>
+            <button data-act="zone">${pet.safe_zone ? 'Editar zona' : 'Definir zona'}</button>
+            ${pet.safe_zone ? `<button data-act="zone-del" class="danger">Remover zona</button>` : ''}
+            ${lostBtn}
+          </span>
         `;
-        row.onclick = () => {
-          const entry = pets.get(pet.id);
-          if (entry) map.panTo(entry.marker.getLatLng());
-        };
+        row.querySelector('[data-act="pan"]').onclick = () => map.panTo(entry.marker.getLatLng());
+        row.querySelector('[data-act="zone"]').onclick = () => beginZoneDrawing(pet.id);
+        const del = row.querySelector('[data-act="zone-del"]');
+        if (del) del.onclick = () => deleteZone(pet.id);
+        const lostB = row.querySelector('[data-act="lost"]');
+        if (lostB) lostB.onclick = () => markLost(pet.id);
+        const foundB = row.querySelector('[data-act="found"]');
+        if (foundB) foundB.onclick = () => clearLost(pet.id);
         container.appendChild(row);
       });
   }
 
+  function escapeHTML(s) {
+    return String(s).replace(/[&<>"']/g, ch =>
+      ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[ch]);
+  }
+
   function applyPosition(pos) {
     const entry = pets.get(pos.pet_id);
-    if (!entry) return; // pet ainda não foi carregado
+    if (!entry) return;
     if (pos.step <= entry.lastStep) return;
     entry.lastStep = pos.step;
+    entry.outside = !!pos.outside_zone;
     entry.marker.setLatLng([pos.latitude, pos.longitude]);
     entry.trail.addLatLng([pos.latitude, pos.longitude]);
     renderPetList();
   }
+
+  // ---------- Desenho de zona ----------
+
+  let zoneDrawState = null; // { petId, step: 'center' | 'radius', center?: LatLng, previewLine?, previewCircle? }
+
+  function setHint(html) {
+    const h = document.getElementById('zone-hint');
+    if (!html) { h.style.display = 'none'; h.innerHTML = ''; return; }
+    h.innerHTML = html;
+    h.style.display = 'block';
+  }
+
+  function beginZoneDrawing(petId) {
+    cancelZoneDrawing();
+    zoneDrawState = { petId, step: 'center' };
+    map.getContainer().style.cursor = 'crosshair';
+    setHint(`Clique no <b>centro</b> da zona segura. <button id="zd-cancel">Cancelar</button>`);
+    document.getElementById('zd-cancel').onclick = cancelZoneDrawing;
+  }
+
+  function cancelZoneDrawing() {
+    if (!zoneDrawState) return;
+    if (zoneDrawState.previewLine) map.removeLayer(zoneDrawState.previewLine);
+    if (zoneDrawState.previewCircle) map.removeLayer(zoneDrawState.previewCircle);
+    zoneDrawState = null;
+    map.getContainer().style.cursor = '';
+    setHint(null);
+  }
+
+  map.on('click', (e) => {
+    if (!zoneDrawState) return;
+    if (zoneDrawState.step === 'center') {
+      zoneDrawState.center = e.latlng;
+      zoneDrawState.previewCircle = L.circle(e.latlng, {
+        radius: 1, color: '#444', weight: 2, opacity: 0.7,
+        fillColor: '#444', fillOpacity: 0.08
+      }).addTo(map);
+      zoneDrawState.previewLine = L.polyline([e.latlng, e.latlng], {
+        color: '#444', weight: 1, dashArray: '4 4', opacity: 0.7
+      }).addTo(map);
+      zoneDrawState.step = 'radius';
+      setHint(`Mova o cursor e clique para definir o <b>raio</b>. <button id="zd-cancel">Cancelar</button>`);
+      document.getElementById('zd-cancel').onclick = cancelZoneDrawing;
+    } else if (zoneDrawState.step === 'radius') {
+      const radius = zoneDrawState.center.distanceTo(e.latlng);
+      const { petId, center } = zoneDrawState;
+      cancelZoneDrawing();
+      saveZone(petId, center.lat, center.lng, radius);
+    }
+  });
+
+  map.on('mousemove', (e) => {
+    if (!zoneDrawState || zoneDrawState.step !== 'radius') return;
+    const r = zoneDrawState.center.distanceTo(e.latlng);
+    zoneDrawState.previewCircle.setRadius(r);
+    zoneDrawState.previewLine.setLatLngs([zoneDrawState.center, e.latlng]);
+    setHint(`Raio: <b>${r.toFixed(0)} m</b> — clique para confirmar. <button id="zd-cancel">Cancelar</button>`);
+    document.getElementById('zd-cancel').onclick = cancelZoneDrawing;
+  });
+
+  async function saveZone(petId, lat, lng, radius) {
+    const res = await fetch(`/pets/${petId}/zone`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ center_lat: lat, center_lon: lng, radius_meters: radius })
+    });
+    if (!res.ok) {
+      alert('Erro ao salvar zona: ' + await res.text());
+      return;
+    }
+    const zone = await res.json();
+    const entry = pets.get(petId);
+    if (entry) {
+      entry.pet.safe_zone = zone;
+      syncZone(entry);
+      renderPetList();
+    }
+  }
+
+  // ---------- Modo perdido ----------
+
+  const lostOverlay = document.getElementById('lost-overlay');
+  const lostUrl = document.getElementById('lost-url');
+  const lostErr = document.getElementById('lost-err');
+  const lostPetLabel = document.getElementById('lost-pet-label');
+  const lostCopyBtn = document.getElementById('lost-copy');
+  const lostShareBtn = document.getElementById('lost-share');
+  let currentLostUrl = '';
+
+  function openLostModal(petName, url, err) {
+    lostPetLabel.textContent = petName;
+    if (err) {
+      lostErr.style.display = 'block';
+      lostErr.textContent = err;
+      lostUrl.textContent = '—';
+      currentLostUrl = '';
+    } else {
+      lostErr.style.display = 'none';
+      lostUrl.textContent = url;
+      currentLostUrl = url;
+    }
+    lostCopyBtn.classList.remove('ok');
+    lostCopyBtn.textContent = '📋 Copiar link';
+    lostOverlay.classList.add('open');
+  }
+
+  function closeLostModal() { lostOverlay.classList.remove('open'); }
+
+  document.getElementById('lost-close').onclick = closeLostModal;
+  lostOverlay.addEventListener('click', (e) => { if (e.target === lostOverlay) closeLostModal(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && lostOverlay.classList.contains('open')) closeLostModal();
+  });
+
+  lostCopyBtn.onclick = async () => {
+    if (!currentLostUrl) return;
+    try {
+      await navigator.clipboard.writeText(currentLostUrl);
+      lostCopyBtn.textContent = '✅ Copiado!';
+      lostCopyBtn.classList.add('ok');
+      setTimeout(() => {
+        lostCopyBtn.textContent = '📋 Copiar link';
+        lostCopyBtn.classList.remove('ok');
+      }, 2000);
+    } catch (_) {
+      // fallback: seleciona o conteúdo do <code>
+      const range = document.createRange();
+      range.selectNodeContents(lostUrl);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+  };
+
+  lostShareBtn.onclick = () => {
+    if (!currentLostUrl) return;
+    const text = encodeURIComponent(`🚨 Pet perdido! Última posição em tempo real: ${currentLostUrl}`);
+    window.open(`https://wa.me/?text=${text}`, '_blank', 'noopener');
+  };
+
+  async function markLost(petId) {
+    const entry = pets.get(petId);
+    const name = entry ? entry.pet.name : `Pet #${petId}`;
+    try {
+      const res = await fetch(`/pets/${petId}/lost`, { method: 'POST' });
+      if (!res.ok) {
+        openLostModal(name, '', 'Erro: ' + (await res.text()));
+        return;
+      }
+      const data = await res.json();
+      if (entry) {
+        entry.pet.lost = true;
+        entry.pet.lost_token = data.lost_token;
+        renderPetList();
+      }
+      openLostModal(name, data.public_url);
+    } catch (e) {
+      openLostModal(name, '', 'Falha de rede: ' + e.message);
+    }
+  }
+
+  async function clearLost(petId) {
+    try {
+      const res = await fetch(`/pets/${petId}/lost`, { method: 'DELETE' });
+      if (!res.ok && res.status !== 204) {
+        alert('Erro ao desmarcar perdido: ' + await res.text());
+        return;
+      }
+      const entry = pets.get(petId);
+      if (entry) {
+        entry.pet.lost = false;
+        entry.pet.lost_token = '';
+        renderPetList();
+      }
+      closeLostModal();
+    } catch (e) {
+      alert('Falha de rede: ' + e.message);
+    }
+  }
+
+  async function deleteZone(petId) {
+    const res = await fetch(`/pets/${petId}/zone`, { method: 'DELETE' });
+    if (!res.ok && res.status !== 204) {
+      alert('Erro ao remover zona: ' + await res.text());
+      return;
+    }
+    const entry = pets.get(petId);
+    if (entry) {
+      entry.pet.safe_zone = null;
+      entry.outside = false;
+      syncZone(entry);
+      renderPetList();
+    }
+  }
+
+  // ---------- Alertas ----------
+
+  function ensureNotificationPermission() {
+    if (!('Notification' in window)) return;
+    if (Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }
+
+  let audioCtx = null;
+  function beep() {
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'square';
+      osc.frequency.value = 880;
+      gain.gain.value = 0.05;
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start();
+      setTimeout(() => { osc.frequency.value = 660; }, 150);
+      setTimeout(() => { osc.stop(); }, 350);
+    } catch (e) { /* ignore */ }
+  }
+
+  function showAlertBanner(petName, position) {
+    const container = document.getElementById('alerts');
+    const div = document.createElement('div');
+    div.className = 'alert-banner';
+    div.innerHTML = `
+      <span>⚠️ ${escapeHTML(petName)} saiu da zona segura</span>
+      <button class="dismiss">Dispensar</button>
+    `;
+    div.querySelector('.dismiss').onclick = () => div.remove();
+    container.appendChild(div);
+    setTimeout(() => div.remove(), 15000);
+
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('Pet Tracker', {
+        body: `${petName} saiu da zona segura`,
+        tag: `left-zone-${position.pet_id}`,
+      });
+    }
+  }
+
+  function handleAlert(msg) {
+    if (msg.event === 'left_zone') {
+      const entry = pets.get(msg.pet_id);
+      const name = entry ? entry.pet.name : `Pet #${msg.pet_id}`;
+      beep();
+      showAlertBanner(name, msg.position);
+    }
+    // returned_zone: silencioso, apenas log
+    if (msg.event === 'returned_zone') {
+      console.log(`pet ${msg.pet_id} voltou à zona`);
+    }
+  }
+
+  // ---------- Carregamento inicial ----------
 
   async function loadPets() {
     const res = await fetch('/pets');
@@ -160,6 +820,7 @@
       entry.trail.setLatLngs(points.map(p => [p.latitude, p.longitude]));
       const last = points[points.length - 1];
       entry.lastStep = last.step;
+      entry.outside = !!last.outside_zone;
       entry.marker.setLatLng([last.latitude, last.longitude]);
     });
     renderPetList();
@@ -168,8 +829,20 @@
   function connectSSE() {
     const source = new EventSource('/stream');
     source.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      applyPosition(data);
+      const msg = JSON.parse(event.data);
+      if (msg.type === 'position' && msg.position) {
+        applyPosition(msg.position);
+      } else if (msg.type === 'alert') {
+        handleAlert(msg);
+        if (msg.position) applyPosition(msg.position);
+      } else if (msg.type === 'lost_status' && msg.pet) {
+        const entry = pets.get(msg.pet.id);
+        if (entry) {
+          entry.pet.lost = msg.pet.lost;
+          entry.pet.lost_token = msg.pet.lost_token || '';
+          renderPetList();
+        }
+      }
     };
     source.onerror = (err) => console.error('SSE error:', err);
   }
@@ -191,6 +864,66 @@
     const pet = await res.json();
     ensurePet(pet);
     document.getElementById('pet-name').value = '';
+  });
+
+  // pede permissão de notificação no primeiro clique do usuário
+  document.body.addEventListener('click', ensureNotificationPermission, { once: true });
+
+  // ---------- Modal de ajuda ----------
+  const helpOverlay = document.getElementById('help-overlay');
+  const helpBtn = document.getElementById('help-btn');
+  const HELP_SEEN_KEY = 'pet-tracker:help-seen';
+
+  if (localStorage.getItem(HELP_SEEN_KEY) === '1') {
+    helpBtn.classList.remove('pulsing');
+  }
+
+  const helpSlides = [...document.querySelectorAll('.help-slide')];
+  const helpPrevBtn = document.getElementById('help-prev');
+  const helpNextBtn = document.getElementById('help-next');
+  const helpDots = document.getElementById('help-dots');
+  let helpIndex = 0;
+
+  // construir dots
+  helpSlides.forEach((_, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'dot' + (i === 0 ? ' active' : '');
+    dot.onclick = () => goToSlide(i);
+    helpDots.appendChild(dot);
+  });
+
+  function renderHelpNav() {
+    helpSlides.forEach((s, i) => s.classList.toggle('active', i === helpIndex));
+    [...helpDots.children].forEach((d, i) => d.classList.toggle('active', i === helpIndex));
+    helpPrevBtn.disabled = helpIndex === 0;
+    const isLast = helpIndex === helpSlides.length - 1;
+    helpNextBtn.textContent = isLast ? 'Começar 🚀' : 'Próximo →';
+  }
+  function goToSlide(i) {
+    helpIndex = Math.max(0, Math.min(helpSlides.length - 1, i));
+    renderHelpNav();
+  }
+  helpPrevBtn.onclick = () => goToSlide(helpIndex - 1);
+  helpNextBtn.onclick = () => {
+    if (helpIndex === helpSlides.length - 1) closeHelp();
+    else goToSlide(helpIndex + 1);
+  };
+
+  function openHelp() {
+    helpOverlay.classList.add('open');
+    helpBtn.classList.remove('pulsing');
+    localStorage.setItem(HELP_SEEN_KEY, '1');
+    goToSlide(0);
+  }
+  function closeHelp() { helpOverlay.classList.remove('open'); }
+  helpBtn.onclick = openHelp;
+  document.getElementById('help-close').onclick = closeHelp;
+  helpOverlay.addEventListener('click', (e) => { if (e.target === helpOverlay) closeHelp(); });
+  document.addEventListener('keydown', (e) => {
+    if (!helpOverlay.classList.contains('open')) return;
+    if (e.key === 'Escape') closeHelp();
+    if (e.key === 'ArrowRight') goToSlide(helpIndex + 1);
+    if (e.key === 'ArrowLeft') goToSlide(helpIndex - 1);
   });
 
   (async () => {
