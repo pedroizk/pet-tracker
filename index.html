@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Pet Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; font-family: system-ui, sans-serif; }
+    #app { display: flex; height: 100%; }
+    #sidebar {
+      width: 280px;
+      background: #f6f7f9;
+      border-right: 1px solid #ddd;
+      padding: 14px;
+      overflow-y: auto;
+      box-sizing: border-box;
+    }
+    #sidebar h1 { font-size: 16px; margin: 0 0 10px; }
+    #sidebar h2 { font-size: 13px; margin: 16px 0 6px; color: #555; text-transform: uppercase; letter-spacing: 0.5px; }
+    #map { flex: 1; }
+    form#new-pet { display: flex; flex-direction: column; gap: 6px; }
+    form#new-pet input, form#new-pet select, form#new-pet button {
+      padding: 6px 8px; font-size: 13px; border: 1px solid #ccc; border-radius: 4px;
+    }
+    form#new-pet button {
+      background: #2a7; color: white; border-color: #2a7; cursor: pointer; font-weight: 600;
+    }
+    form#new-pet button:hover { background: #239065; }
+    .pet-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 4px; border-bottom: 1px solid #eee; font-size: 13px;
+    }
+    .pet-row .icon { font-size: 18px; }
+    .pet-row .name { flex: 1; font-weight: 600; }
+    .pet-row .step { color: #888; font-size: 11px; }
+    .pet-marker-label {
+      background: rgba(255, 255, 255, 0.92);
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid #999;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+
+<div id="app">
+  <aside id="sidebar">
+    <h1>🐾 Pet Tracker</h1>
+
+    <h2>Adicionar pet</h2>
+    <form id="new-pet">
+      <input id="pet-name" type="text" placeholder="Nome" required />
+      <select id="pet-species">
+        <option value="dog">🐶 Cachorro</option>
+        <option value="cat">🐱 Gato</option>
+      </select>
+      <button type="submit">Adicionar</button>
+    </form>
+
+    <h2>Pets</h2>
+    <div id="pet-list"></div>
+  </aside>
+
+  <div id="map"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  const initialLat = -31.770687426923516;
+  const initialLng = -52.34135057529372;
+
+  const map = L.map('map').setView([initialLat, initialLng], 17);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap'
+  }).addTo(map);
+
+  L.circleMarker([initialLat, initialLng], {
+    radius: 6, color: '#2a7', fillColor: '#2a7', fillOpacity: 0.9
+  }).addTo(map).bindTooltip("Início");
+
+  const speciesIcon = { dog: '🐶', cat: '🐱' };
+  const trailColors = ['#c0392b', '#2980b9', '#8e44ad', '#16a085', '#d35400', '#27ae60', '#2c3e50'];
+
+  // pet_id -> { pet, marker, trail, lastStep }
+  const pets = new Map();
+
+  function makeIcon(species) {
+    return L.divIcon({
+      html: `<div style="font-size:26px;line-height:26px;">${speciesIcon[species] || '🐾'}</div>`,
+      className: 'pet-icon',
+      iconSize: [28, 28],
+      iconAnchor: [14, 14]
+    });
+  }
+
+  function colorFor(petId) {
+    return trailColors[(petId - 1) % trailColors.length];
+  }
+
+  function ensurePet(pet) {
+    if (pets.has(pet.id)) return pets.get(pet.id);
+    const marker = L.marker([initialLat, initialLng], { icon: makeIcon(pet.species) })
+      .addTo(map)
+      .bindTooltip(pet.name, { permanent: true, direction: 'top', className: 'pet-marker-label', offset: [0, -14] });
+    const trail = L.polyline([], { color: colorFor(pet.id), weight: 3, opacity: 0.85 }).addTo(map);
+    const entry = { pet, marker, trail, lastStep: -1 };
+    pets.set(pet.id, entry);
+    renderPetList();
+    return entry;
+  }
+
+  function renderPetList() {
+    const container = document.getElementById('pet-list');
+    container.innerHTML = '';
+    [...pets.values()]
+      .sort((a, b) => a.pet.id - b.pet.id)
+      .forEach(({ pet, lastStep }) => {
+        const row = document.createElement('div');
+        row.className = 'pet-row';
+        row.innerHTML = `
+          <span class="icon">${speciesIcon[pet.species] || '🐾'}</span>
+          <span class="name">${pet.name}</span>
+          <span class="step">passo ${lastStep < 0 ? '—' : lastStep}</span>
+        `;
+        row.onclick = () => {
+          const entry = pets.get(pet.id);
+          if (entry) map.panTo(entry.marker.getLatLng());
+        };
+        container.appendChild(row);
+      });
+  }
+
+  function applyPosition(pos) {
+    const entry = pets.get(pos.pet_id);
+    if (!entry) return; // pet ainda não foi carregado
+    if (pos.step <= entry.lastStep) return;
+    entry.lastStep = pos.step;
+    entry.marker.setLatLng([pos.latitude, pos.longitude]);
+    entry.trail.addLatLng([pos.latitude, pos.longitude]);
+    renderPetList();
+  }
+
+  async function loadPets() {
+    const res = await fetch('/pets');
+    const list = await res.json();
+    list.forEach(ensurePet);
+  }
+
+  async function loadHistory() {
+    const res = await fetch('/history');
+    const byPet = await res.json();
+    Object.entries(byPet).forEach(([petId, points]) => {
+      const entry = pets.get(Number(petId));
+      if (!entry || !points.length) return;
+      entry.trail.setLatLngs(points.map(p => [p.latitude, p.longitude]));
+      const last = points[points.length - 1];
+      entry.lastStep = last.step;
+      entry.marker.setLatLng([last.latitude, last.longitude]);
+    });
+    renderPetList();
+  }
+
+  function connectSSE() {
+    const source = new EventSource('/stream');
+    source.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      applyPosition(data);
+    };
+    source.onerror = (err) => console.error('SSE error:', err);
+  }
+
+  document.getElementById('new-pet').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('pet-name').value.trim();
+    const species = document.getElementById('pet-species').value;
+    if (!name) return;
+    const res = await fetch('/pets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, species })
+    });
+    if (!res.ok) {
+      alert('Erro ao criar pet: ' + await res.text());
+      return;
+    }
+    const pet = await res.json();
+    ensurePet(pet);
+    document.getElementById('pet-name').value = '';
+  });
+
+  (async () => {
+    await loadPets();
+    await loadHistory();
+    connectSSE();
+  })();
+</script>
+
+</body>
+</html>
