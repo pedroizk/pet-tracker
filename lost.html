@@ -4,21 +4,42 @@
   <meta charset="UTF-8">
   <title>Pet perdido — Pet Tracker</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#c0392b">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='52' font-size='52'%3E🚨%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    html, body { margin: 0; padding: 0; height: 100%; font-family: system-ui, sans-serif; background: #f6f7f9; }
+    :root {
+      --bg: #f6f7f9; --bg-elev: #fff; --text: #1c1f24;
+      --text-soft: #5b6470; --text-dim: #8b939f;
+      --border: #e0e0e0; --accent: #2a7763;
+      --danger: #c0392b;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      background: var(--bg);
+    }
     #wrap { display: flex; flex-direction: column; height: 100%; }
 
     header {
-      background: #2a7; color: white;
-      padding: 12px 18px;
+      background: linear-gradient(135deg, var(--danger), #e74c3c);
+      color: white; padding: 14px 18px;
       display: flex; align-items: center; gap: 12px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+      flex-shrink: 0;
     }
-    header .emoji { font-size: 32px; line-height: 1; }
+    header .emoji { font-size: 36px; line-height: 1; }
     header .info { flex: 1; min-width: 0; }
-    header h1 { margin: 0; font-size: 16px; font-weight: 700; }
-    header .sub { font-size: 12px; opacity: 0.92; margin-top: 2px; }
+    header h1 { margin: 0; font-size: 17px; font-weight: 700; }
+    header .sub { font-size: 12px; opacity: 0.92; margin-top: 3px; }
+    header .actions a, header .actions button {
+      color: white; background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.4);
+      border-radius: 6px; padding: 6px 10px;
+      font-size: 12px; text-decoration: none; cursor: pointer;
+      font-family: inherit; font-weight: 600;
+    }
+    header .actions a:hover, header .actions button:hover { background: rgba(255,255,255,0.3); }
 
     #map { flex: 1; position: relative; background: #d7d8db; }
     #map .loading {
@@ -28,35 +49,58 @@
       pointer-events: none;
     }
 
+    .legend {
+      position: absolute; bottom: 12px; left: 12px;
+      background: white; border-radius: 8px;
+      padding: 10px 12px; font-size: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      z-index: 500;
+    }
+    .legend .item {
+      display: flex; align-items: center; gap: 8px;
+      margin: 4px 0;
+    }
+    .legend .dot {
+      width: 14px; height: 14px; border-radius: 50%;
+      display: inline-block;
+    }
+
     footer {
-      background: #f6f7f9; border-top: 1px solid #e0e0e0;
-      padding: 8px 14px;
+      background: var(--bg-elev); border-top: 1px solid var(--border);
+      padding: 10px 14px;
       font-size: 11px; color: #666;
       display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 6px;
     }
-    footer .pulse { display: inline-block; width: 8px; height: 8px; background: #2a7; border-radius: 50%; margin-right: 6px; animation: live 1.4s ease-in-out infinite; }
+    footer .pulse { display: inline-block; width: 8px; height: 8px;
+      background: var(--accent); border-radius: 50%; margin-right: 6px;
+      animation: live 1.4s ease-in-out infinite; }
     @keyframes live { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
 
     .pet-marker-label {
-      background: rgba(255, 255, 255, 0.95);
-      padding: 3px 8px;
+      background: rgba(255, 255, 255, 0.96);
+      padding: 3px 9px;
       border-radius: 4px;
-      border: 1px solid #c0392b;
+      border: 1px solid var(--danger);
       font-size: 13px; font-weight: 700;
       white-space: nowrap;
-      color: #c0392b;
+      color: var(--danger);
     }
+    .sighting-popup {
+      font-size: 12px; line-height: 1.4;
+    }
+    .sighting-popup b { display: block; margin-bottom: 4px; color: #444; }
 
-    #notfound, #empty {
+    #notfound {
       flex: 1;
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
-      padding: 32px; text-align: center;
+      padding: 40px; text-align: center;
       color: #555;
     }
-    #notfound .icon, #empty .icon { font-size: 64px; margin-bottom: 14px; }
-    #notfound h2, #empty h2 { font-size: 20px; color: #333; margin: 0 0 6px; }
-    #notfound p, #empty p { font-size: 13px; color: #666; margin: 0; max-width: 320px; }
+    #notfound .icon { font-size: 72px; margin-bottom: 18px; }
+    #notfound h2 { font-size: 20px; color: #333; margin: 0 0 8px; }
+    #notfound p { font-size: 13px; color: #666; margin: 0; max-width: 320px; }
   </style>
 </head>
 <body>
@@ -68,14 +112,23 @@
       <h1 id="hd-title">Pet perdido</h1>
       <div class="sub" id="hd-sub">—</div>
     </div>
+    <div class="actions">
+      <button id="share-btn">📤 Compartilhar</button>
+    </div>
   </header>
 
   <div id="map" style="display:none;">
     <div class="loading" id="map-loading">Carregando posição…</div>
+    <div class="legend" id="legend" style="display:none;">
+      <div class="item"><span class="dot" style="background:#c0392b;"></span>Última posição</div>
+      <div class="item"><span class="dot" style="background:#f59e0b;"></span>Avistamentos</div>
+      <div class="item"><span class="dot" style="background:#c0392b;opacity:0.5;"></span>Rastro recente</div>
+    </div>
   </div>
 
   <footer id="footer" style="display:none;">
     <span><span class="pulse"></span>Atualiza a cada 10s</span>
+    <span><span id="sightings-count">0</span> avistamentos reportados</span>
     <span id="last-fetch">—</span>
   </footer>
 
@@ -88,18 +141,23 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-  const speciesIcon = { dog: '🐶', cat: '🐱' };
+  const speciesIcon = { dog: '🐶', cat: '🐱', rabbit: '🐰', bird: '🐦', other: '🐾' };
   const POLL_MS = 10000;
-  const HISTORY_MAX = 100;
+  const HISTORY_MAX = 200;
 
   const token = window.location.pathname.split('/').filter(Boolean).pop();
 
   let map = null;
   let marker = null;
   let trail = null;
+  const sightingMarkers = new Map(); // id -> marker
 
   function show(id) { document.getElementById(id).style.display = ''; }
   function hide(id) { document.getElementById(id).style.display = 'none'; }
+  function escapeHTML(s) {
+    return String(s).replace(/[&<>"']/g, ch =>
+      ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[ch]);
+  }
 
   function showNotFound() {
     hide('header'); hide('map'); hide('footer');
@@ -113,20 +171,29 @@
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19, attribution: '&copy; OpenStreetMap'
     }).addTo(map);
-    document.getElementById('map-loading').remove();
+    const ml = document.getElementById('map-loading');
+    if (ml) ml.remove();
+    document.getElementById('legend').style.display = '';
   }
 
   function fmtTime(iso) {
     try {
       const d = new Date(iso);
       return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-    } catch (_) { return '—'; }
+    } catch { return '—'; }
+  }
+  function fmtDate(iso) {
+    try {
+      const d = new Date(iso);
+      return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    } catch { return '—'; }
   }
 
   function renderHeader(state) {
     const pet = state.pet;
     document.getElementById('hd-emoji').textContent = speciesIcon[pet.species] || '🐾';
-    document.getElementById('hd-title').textContent = `${pet.name} foi visto(a) por último às ${fmtTime(state.position && state.position.timestamp)}`;
+    document.getElementById('hd-title').textContent =
+      `${pet.name} foi visto(a) por último às ${fmtTime(state.position && state.position.timestamp)}`;
     const since = pet.lost_since ? `Perdido(a) desde ${fmtTime(pet.lost_since)}` : 'Pet em modo perdido';
     document.getElementById('hd-sub').textContent = since;
     document.title = `${pet.name} perdido(a) — Pet Tracker`;
@@ -136,9 +203,9 @@
   function renderState(state) {
     const pos = state.position;
     if (!pos || (pos.latitude === 0 && pos.longitude === 0)) {
-      // pet sem posição ainda
       document.getElementById('map').style.display = '';
-      document.getElementById('map-loading').textContent = 'Sem dados de localização ainda';
+      const ml = document.getElementById('map-loading');
+      if (ml) ml.textContent = 'Sem dados de localização ainda';
       return;
     }
     show('map');
@@ -148,13 +215,13 @@
     if (!marker) {
       marker = L.marker(latlng, {
         icon: L.divIcon({
-          html: `<div style="font-size:32px;line-height:32px;">${speciesIcon[state.pet.species] || '🐾'}</div>`,
+          html: `<div style="font-size:34px;line-height:34px;filter:drop-shadow(0 2px 4px rgba(192,57,43,0.6));">${speciesIcon[state.pet.species] || '🐾'}</div>`,
           className: 'lost-icon',
-          iconSize: [36, 36], iconAnchor: [18, 18]
+          iconSize: [38, 38], iconAnchor: [19, 19]
         })
       }).addTo(map).bindTooltip(state.pet.name, {
         permanent: true, direction: 'top',
-        className: 'pet-marker-label', offset: [0, -16]
+        className: 'pet-marker-label', offset: [0, -18]
       });
     } else {
       marker.setLatLng(latlng);
@@ -162,41 +229,73 @@
 
     const points = (state.history || []).slice(-HISTORY_MAX).map(p => [p.latitude, p.longitude]);
     if (!trail) {
-      trail = L.polyline(points, { color: '#c0392b', weight: 4, opacity: 0.85 }).addTo(map);
+      trail = L.polyline(points, { color: '#c0392b', weight: 4, opacity: 0.7 }).addTo(map);
     } else {
       trail.setLatLngs(points);
     }
 
-    document.getElementById('last-fetch').textContent = `Última atualização: ${fmtTime(new Date().toISOString())}`;
+    // Sightings
+    const sightings = state.sightings || [];
+    document.getElementById('sightings-count').textContent = sightings.length;
+    const seenIds = new Set();
+    sightings.forEach(s => {
+      seenIds.add(s.id);
+      if (sightingMarkers.has(s.id)) return;
+      const m = L.marker([s.latitude, s.longitude], {
+        icon: L.divIcon({
+          html: `<div style="background:#f59e0b;color:white;font-size:14px;font-weight:700;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 4px rgba(0,0,0,0.3);border:2px solid white;">👁</div>`,
+          className: 'sighting-icon', iconSize: [28, 28], iconAnchor: [14, 14]
+        })
+      }).addTo(map).bindPopup(`
+        <div class="sighting-popup">
+          <b>Avistamento • ${fmtDate(s.timestamp)}</b>
+          ${s.note ? `<div>${escapeHTML(s.note)}</div>` : ''}
+          ${s.reporter ? `<div style="color:#666;margin-top:4px;">— ${escapeHTML(s.reporter)}</div>` : '<div style="color:#888;font-style:italic;margin-top:4px;">Reportado anonimamente</div>'}
+        </div>`);
+      sightingMarkers.set(s.id, m);
+    });
+    // remove old
+    [...sightingMarkers.keys()].forEach(id => {
+      if (!seenIds.has(id)) {
+        map.removeLayer(sightingMarkers.get(id));
+        sightingMarkers.delete(id);
+      }
+    });
+
+    document.getElementById('last-fetch').textContent = `Atualizado às ${fmtTime(new Date().toISOString())}`;
     show('footer');
   }
+
+  document.getElementById('share-btn').addEventListener('click', async () => {
+    const url = window.location.href;
+    const title = document.title;
+    if (navigator.share) {
+      try { await navigator.share({ title, url }); } catch {}
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+        const btn = document.getElementById('share-btn');
+        const old = btn.textContent;
+        btn.textContent = '✅ Link copiado';
+        setTimeout(() => btn.textContent = old, 2000);
+      } catch {}
+    }
+  });
 
   async function poll() {
     try {
       const res = await fetch(`/lost/${token}/state`, { cache: 'no-store' });
-      if (res.status === 404) {
-        showNotFound();
-        return false;
-      }
-      if (!res.ok) {
-        console.warn('lost state error', res.status);
-        return true;
-      }
+      if (res.status === 404) { showNotFound(); return false; }
+      if (!res.ok) { console.warn('lost state error', res.status); return true; }
       const state = await res.json();
       renderHeader(state);
       renderState(state);
       return true;
-    } catch (e) {
-      console.error(e);
-      return true;
-    }
+    } catch (e) { console.error(e); return true; }
   }
 
   (async () => {
-    if (!token) {
-      showNotFound();
-      return;
-    }
+    if (!token) { showNotFound(); return; }
     const ok = await poll();
     if (!ok) return;
     setInterval(poll, POLL_MS);

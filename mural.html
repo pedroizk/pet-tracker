@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Mural de pets perdidos — Pet Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#c0392b">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='52' font-size='52'%3E🚨%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root {
+      --bg: #f6f7f9; --bg-elev: #fff; --text: #1c1f24;
+      --text-soft: #5b6470; --text-dim: #8b939f;
+      --border: #dfe3e8; --accent: #2a7763;
+      --danger: #c0392b; --danger-soft: #fde0e0;
+      --shadow: 0 4px 14px rgba(0,0,0,0.1);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      background: var(--bg); color: var(--text);
+    }
+    header {
+      background: linear-gradient(135deg, var(--danger) 0%, #e74c3c 100%);
+      color: white; padding: 14px 20px;
+      display: flex; align-items: center; gap: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    header .emoji { font-size: 32px; }
+    header h1 { margin: 0; font-size: 18px; font-weight: 700; }
+    header p { margin: 2px 0 0; font-size: 12px; opacity: 0.92; }
+    header .back {
+      color: white; text-decoration: none; font-size: 13px;
+      padding: 6px 12px; border: 1px solid rgba(255,255,255,0.5);
+      border-radius: 6px;
+      transition: background 0.15s ease;
+    }
+    header .back:hover { background: rgba(255,255,255,0.15); }
+    header .grow { flex: 1; }
+
+    .layout {
+      display: grid; grid-template-columns: 360px 1fr;
+      height: calc(100% - 64px);
+    }
+    aside.list {
+      background: var(--bg-elev);
+      border-right: 1px solid var(--border);
+      overflow-y: auto; padding: 16px;
+    }
+    #map { background: var(--bg); }
+
+    .stats-banner {
+      padding: 10px 12px; margin-bottom: 12px;
+      background: var(--danger-soft); color: var(--danger);
+      border-radius: 8px; font-weight: 600; font-size: 13px;
+      text-align: center;
+    }
+
+    .lost-card {
+      background: var(--bg); border: 1px solid var(--border);
+      border-left: 4px solid var(--danger);
+      border-radius: 10px; padding: 12px;
+      margin-bottom: 10px; cursor: pointer;
+      transition: box-shadow 0.15s ease, transform 0.15s ease;
+    }
+    .lost-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+    .lost-card .header {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 6px;
+    }
+    .lost-card .header .ic {
+      font-size: 28px; line-height: 1;
+      width: 40px; height: 40px;
+      background: var(--bg-elev); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .lost-card .header .name { font-weight: 700; font-size: 14px; }
+    .lost-card .header .since { font-size: 11px; color: var(--text-dim); }
+    .lost-card .footer {
+      font-size: 11px; color: var(--text-soft);
+      margin-top: 6px;
+    }
+    .lost-card a.share {
+      display: inline-block; margin-top: 8px; padding: 6px 10px;
+      background: var(--accent); color: white;
+      border-radius: 5px; font-size: 12px; font-weight: 600;
+      text-decoration: none;
+    }
+    .lost-card a.share:hover { background: var(--accent); opacity: 0.9; }
+
+    .empty {
+      text-align: center; padding: 60px 20px;
+      color: var(--text-dim);
+    }
+    .empty .e { font-size: 64px; margin-bottom: 12px; display: block; }
+    .empty h2 { margin: 0 0 6px; color: var(--text); }
+    .empty p { font-size: 13px; margin: 0; max-width: 280px; margin: 0 auto; }
+
+    .lost-marker {
+      filter: drop-shadow(0 2px 4px rgba(192, 57, 43, 0.6));
+    }
+    .lost-marker-label {
+      background: rgba(192, 57, 43, 0.96);
+      color: white;
+      padding: 3px 10px;
+      border-radius: 4px;
+      border: 0;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 720px) {
+      .layout { grid-template-columns: 1fr; }
+      aside.list { max-height: 50%; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="emoji">🚨</span>
+  <div>
+    <h1>Mural de Pets Perdidos</h1>
+    <p>Pets sendo procurados agora — ajude a achar!</p>
+  </div>
+  <div class="grow"></div>
+  <a class="back" href="/">← Painel</a>
+</header>
+
+<div class="layout">
+  <aside class="list">
+    <div class="stats-banner" id="stats-banner">Carregando…</div>
+    <div id="lost-list"></div>
+    <div class="empty" id="empty" style="display:none;">
+      <span class="e">🎉</span>
+      <h2>Nenhum pet perdido!</h2>
+      <p>Quando alguém marcar um pet como perdido, ele aparece aqui.</p>
+    </div>
+  </aside>
+  <div id="map"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  const speciesIcon = { dog: '🐶', cat: '🐱', rabbit: '🐰', bird: '🐦', other: '🐾' };
+
+  const map = L.map('map').setView([-31.770687, -52.341350], 14);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19, attribution: '&copy; OpenStreetMap'
+  }).addTo(map);
+
+  const markers = new Map(); // pet_id -> marker
+
+  function fmtSince(ts) {
+    if (!ts) return '—';
+    const d = new Date(ts);
+    const diffMs = Date.now() - d.getTime();
+    const diffMin = Math.floor(diffMs / 60000);
+    if (diffMin < 1) return 'há instantes';
+    if (diffMin < 60) return `há ${diffMin} min`;
+    const diffH = Math.floor(diffMin / 60);
+    if (diffH < 24) return `há ${diffH}h${diffMin % 60 > 0 ? ` ${diffMin % 60}m` : ''}`;
+    const diffD = Math.floor(diffH / 24);
+    return `há ${diffD} dia${diffD > 1 ? 's' : ''}`;
+  }
+  function escapeHTML(s) {
+    return String(s).replace(/[&<>"']/g, ch =>
+      ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[ch]);
+  }
+
+  async function load() {
+    const res = await fetch('/api/mural');
+    const list = await res.json();
+
+    const listEl = document.getElementById('lost-list');
+    const emptyEl = document.getElementById('empty');
+    const statsBanner = document.getElementById('stats-banner');
+
+    listEl.innerHTML = '';
+    // remove markers not in list
+    const keepIds = new Set(list.map(x => x.pet.id));
+    [...markers.keys()].forEach(id => {
+      if (!keepIds.has(id)) { map.removeLayer(markers.get(id)); markers.delete(id); }
+    });
+
+    if (list.length === 0) {
+      emptyEl.style.display = ''; statsBanner.style.display = 'none';
+      return;
+    }
+    emptyEl.style.display = 'none';
+    statsBanner.style.display = '';
+    statsBanner.textContent = `${list.length} ${list.length === 1 ? 'pet perdido' : 'pets perdidos'} agora`;
+
+    const bounds = [];
+    list.forEach(({ pet, position }) => {
+      const card = document.createElement('div');
+      card.className = 'lost-card';
+      card.innerHTML = `
+        <div class="header">
+          <div class="ic">${speciesIcon[pet.species] || '🐾'}</div>
+          <div style="flex:1;">
+            <div class="name">${escapeHTML(pet.name)}</div>
+            <div class="since">Perdido(a) ${fmtSince(pet.lost_since)}</div>
+          </div>
+        </div>
+        <div class="footer">Última posição: ${position.latitude.toFixed(5)}, ${position.longitude.toFixed(5)}</div>
+        ${pet.lost_token ? `<a class="share" href="/lost/${pet.lost_token}" target="_blank">Ver mapa em tempo real →</a>` : ''}
+      `;
+      card.onclick = () => {
+        map.flyTo([position.latitude, position.longitude], 17);
+      };
+      document.getElementById('lost-list').appendChild(card);
+
+      // marker
+      const latlng = [position.latitude, position.longitude];
+      bounds.push(latlng);
+      let m = markers.get(pet.id);
+      if (!m) {
+        m = L.marker(latlng, {
+          icon: L.divIcon({
+            html: `<div style="font-size:30px;line-height:30px;filter:drop-shadow(0 2px 3px rgba(192,57,43,0.5));">${speciesIcon[pet.species] || '🐾'}</div>`,
+            className: 'lost-marker',
+            iconSize: [32, 32], iconAnchor: [16, 16]
+          })
+        }).addTo(map).bindTooltip(pet.name, {
+          permanent: true, direction: 'top',
+          className: 'lost-marker-label', offset: [0, -16]
+        }).bindPopup(`<b>${escapeHTML(pet.name)}</b><br><small>Perdido(a) ${fmtSince(pet.lost_since)}</small><br><a href="/lost/${pet.lost_token}" target="_blank">Acompanhar →</a>`);
+        markers.set(pet.id, m);
+      } else {
+        m.setLatLng(latlng);
+      }
+    });
+
+    if (bounds.length > 1) map.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 });
+    else if (bounds.length === 1) map.setView(bounds[0], 15);
+  }
+
+  load();
+  setInterval(load, 8000);
+</script>
+
+</body>
+</html>

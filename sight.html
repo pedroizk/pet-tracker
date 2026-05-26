@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Reportar avistamento — Pet Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#2a7763">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='52' font-size='52'%3E👁️%3C/text%3E%3C/svg%3E">
+  <style>
+    :root {
+      --bg: #f6f7f9; --bg-elev: #fff; --text: #1c1f24;
+      --text-soft: #5b6470; --text-dim: #8b939f;
+      --border: #dfe3e8; --accent: #2a7763; --accent-hover: #226552;
+      --danger: #c0392b; --success: #16a34a; --warn: #d97706;
+      --warn-soft: #fef0d3;
+      --shadow: 0 4px 14px rgba(0,0,0,0.1);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; min-height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      background: var(--bg); color: var(--text);
+    }
+    body { display: flex; align-items: center; justify-content: center; padding: 16px; min-height: 100vh; }
+
+    .card {
+      width: 100%; max-width: 460px;
+      background: var(--bg-elev); border-radius: 16px;
+      box-shadow: var(--shadow); padding: 28px 24px;
+    }
+    .hero { text-align: center; margin-bottom: 14px; }
+    .hero .emoji {
+      font-size: 56px; line-height: 1;
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 96px; height: 96px;
+      background: #e3f3eb; border-radius: 50%;
+      margin-bottom: 8px;
+    }
+    .hero h1 { margin: 0 0 4px; font-size: 22px; }
+    .hero p { margin: 0; color: var(--text-soft); font-size: 13px; }
+
+    .pet-summary {
+      background: #fef0d3; border: 1px solid #fae0a5;
+      border-radius: 10px; padding: 12px 14px;
+      margin: 16px 0; display: flex; align-items: center; gap: 12px;
+    }
+    .pet-summary .ic { font-size: 36px; }
+    .pet-summary .name { font-weight: 700; font-size: 16px; color: #8a4f00; }
+    .pet-summary .lost { font-size: 12px; color: #a16207; }
+
+    .field { margin: 12px 0; }
+    .field label { display: block; font-size: 12px; font-weight: 600; color: var(--text-soft); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .field input, .field textarea {
+      width: 100%; padding: 10px 12px; font-size: 14px;
+      border: 1px solid var(--border); border-radius: 8px;
+      background: var(--bg); color: var(--text); outline: none;
+      font-family: inherit;
+    }
+    .field input:focus, .field textarea:focus { border-color: var(--accent); }
+    .field textarea { min-height: 70px; resize: vertical; }
+    .field .hint { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+
+    button.btn {
+      width: 100%; padding: 14px 16px; font-size: 15px; font-weight: 700;
+      border: 0; border-radius: 10px; cursor: pointer;
+      background: var(--accent); color: white;
+      transition: background 0.15s ease, transform 0.05s ease;
+      margin-top: 8px;
+    }
+    button.btn:hover { background: var(--accent-hover); }
+    button.btn:active { transform: scale(0.98); }
+    button.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .status {
+      margin: 14px 0; padding: 12px;
+      border-radius: 8px; font-size: 13px;
+    }
+    .status.ok { background: #e3f3eb; color: #205a47; border: 1px solid #c5e6d3; }
+    .status.error { background: #fde0e0; color: #a83232; border: 1px solid #f5b4b4; }
+    .status.info { background: #e7efff; color: #1e40af; border: 1px solid #c8d8ff; }
+
+    .success-block {
+      text-align: center; padding: 20px 10px;
+    }
+    .success-block .big { font-size: 64px; line-height: 1; margin-bottom: 12px; }
+    .success-block h2 { margin: 0 0 8px; color: var(--success); }
+    .success-block p { color: var(--text-soft); margin: 0; font-size: 13px; }
+
+    .notfound {
+      text-align: center; padding: 40px 16px;
+    }
+    .notfound .big { font-size: 56px; margin-bottom: 10px; }
+    .notfound h2 { margin: 0 0 6px; }
+    .notfound p { color: var(--text-soft); font-size: 13px; margin: 0; max-width: 320px; margin: 0 auto;}
+  </style>
+</head>
+<body>
+
+<div class="card" id="card">
+  <div id="loading" class="hero">
+    <div class="emoji">⏳</div>
+    <h1>Carregando…</h1>
+  </div>
+
+  <div id="form-block" style="display:none;">
+    <div class="hero">
+      <div class="emoji">👁️</div>
+      <h1>Você viu este pet?</h1>
+      <p>Reporte o avistamento. O dono recebe sua localização anonimamente.</p>
+    </div>
+
+    <div class="pet-summary" id="pet-summary">
+      <div class="ic" id="pet-emoji">🐾</div>
+      <div>
+        <div class="name" id="pet-name">—</div>
+        <div class="lost" id="pet-lost-status">—</div>
+      </div>
+    </div>
+
+    <div class="status info" id="loc-status">📍 Pegando sua localização atual…</div>
+
+    <form id="sight-form">
+      <div class="field">
+        <label for="note">Detalhes (opcional)</label>
+        <textarea id="note" maxlength="280" placeholder="Ex.: 'estava perto da praça às 14:00, parecia assustado'"></textarea>
+        <div class="hint">Máx. 280 caracteres. Quanto mais detalhes, melhor.</div>
+      </div>
+
+      <div class="field">
+        <label for="reporter">Seu nome ou contato (opcional)</label>
+        <input id="reporter" type="text" maxlength="60" placeholder="Deixe em branco para reportar anônimo" />
+        <div class="hint">Não é obrigatório.</div>
+      </div>
+
+      <button id="submit-btn" type="submit" class="btn" disabled>Reportar avistamento</button>
+    </form>
+  </div>
+
+  <div id="success-block" class="success-block" style="display:none;">
+    <div class="big">✅</div>
+    <h2>Avistamento enviado!</h2>
+    <p>O dono foi notificado. Obrigado por ajudar 💚</p>
+  </div>
+
+  <div id="notfound" class="notfound" style="display:none;">
+    <div class="big">🚫</div>
+    <h2>Link inválido</h2>
+    <p>Esse QR code parece não estar mais ativo, ou o pet foi removido.</p>
+  </div>
+</div>
+
+<script>
+  const speciesIcon = { dog: '🐶', cat: '🐱', rabbit: '🐰', bird: '🐦', other: '🐾' };
+  const token = window.location.pathname.split('/').filter(Boolean).pop();
+
+  let currentPosition = null;
+
+  function showOnly(id) {
+    ['loading', 'form-block', 'success-block', 'notfound'].forEach(s => {
+      document.getElementById(s).style.display = (s === id ? '' : 'none');
+    });
+  }
+
+  function fmtSince(ts) {
+    if (!ts) return '';
+    const d = new Date(ts);
+    const diffMin = Math.floor((Date.now() - d.getTime()) / 60000);
+    if (diffMin < 60) return `há ${diffMin || 1} min`;
+    const diffH = Math.floor(diffMin / 60);
+    if (diffH < 24) return `há ${diffH}h`;
+    return `há ${Math.floor(diffH / 24)} dia(s)`;
+  }
+
+  async function loadState() {
+    try {
+      const res = await fetch(`/sight/${token}/state`);
+      if (res.status === 404) { showOnly('notfound'); return; }
+      const state = await res.json();
+      const pet = state.pet;
+      document.getElementById('pet-emoji').textContent = speciesIcon[pet.species] || '🐾';
+      document.getElementById('pet-name').textContent = pet.name;
+      const summary = document.getElementById('pet-summary');
+      if (pet.lost) {
+        document.getElementById('pet-lost-status').textContent = `🚨 Perdido(a) ${fmtSince(pet.lost_since)}`;
+      } else {
+        document.getElementById('pet-lost-status').textContent = 'Pet do bairro';
+        summary.style.background = '#e3f3eb';
+        summary.style.borderColor = '#c5e6d3';
+        summary.querySelector('.name').style.color = '#205a47';
+        summary.querySelector('.lost').style.color = '#207244';
+      }
+      showOnly('form-block');
+      requestLocation();
+    } catch (e) {
+      showOnly('notfound');
+    }
+  }
+
+  function requestLocation() {
+    const status = document.getElementById('loc-status');
+    const submit = document.getElementById('submit-btn');
+    if (!('geolocation' in navigator)) {
+      status.className = 'status error';
+      status.textContent = 'Seu navegador não suporta geolocalização.';
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        currentPosition = pos;
+        status.className = 'status ok';
+        status.innerHTML = `📍 Localização capturada (precisão ${(pos.coords.accuracy || 0).toFixed(0)}m)`;
+        submit.disabled = false;
+      },
+      (err) => {
+        status.className = 'status error';
+        status.textContent = `Não foi possível obter sua localização: ${err.message}. Reporte manualmente ou tente novamente.`;
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+    );
+  }
+
+  document.getElementById('sight-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!currentPosition) return;
+    const submit = document.getElementById('submit-btn');
+    submit.disabled = true; submit.textContent = 'Enviando…';
+
+    const body = {
+      latitude: currentPosition.coords.latitude,
+      longitude: currentPosition.coords.longitude,
+      note: document.getElementById('note').value.trim(),
+      reporter: document.getElementById('reporter').value.trim(),
+    };
+    try {
+      const res = await fetch(`/sight/${token}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) throw new Error(await res.text());
+      showOnly('success-block');
+    } catch (err) {
+      submit.disabled = false;
+      submit.textContent = 'Reportar avistamento';
+      const status = document.getElementById('loc-status');
+      status.className = 'status error';
+      status.textContent = 'Erro ao enviar: ' + err.message;
+    }
+  });
+
+  loadState();
+</script>
+
+</body>
+</html>

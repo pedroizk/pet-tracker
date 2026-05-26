@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Sender — Pet Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#2a7763">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='52' font-size='52'%3E📱%3C/text%3E%3C/svg%3E">
+  <style>
+    :root {
+      --bg: #f6f7f9; --bg-elev: #fff; --text: #1c1f24; --text-soft: #5b6470; --text-dim: #8b939f;
+      --border: #dfe3e8; --accent: #2a7763; --accent-hover: #226552;
+      --danger: #c0392b; --success: #16a34a; --warn: #d97706;
+      --shadow: 0 4px 14px rgba(0,0,0,0.1);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; min-height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      background: var(--bg); color: var(--text);
+    }
+    body {
+      display: flex; align-items: center; justify-content: center;
+      padding: 16px; min-height: 100vh;
+    }
+    .card {
+      width: 100%; max-width: 420px;
+      background: var(--bg-elev); border-radius: 16px;
+      box-shadow: var(--shadow); padding: 28px 24px;
+    }
+    .hero { text-align: center; margin-bottom: 18px; }
+    .hero .emoji {
+      font-size: 56px; line-height: 1;
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 96px; height: 96px;
+      background: #e3f3eb; border-radius: 50%;
+      margin-bottom: 8px;
+    }
+    h1 { margin: 0 0 4px; font-size: 22px; }
+    .sub { color: var(--text-soft); font-size: 13px; margin: 0; }
+    .field { margin: 14px 0; }
+    .field label { display: block; font-size: 12px; font-weight: 600; color: var(--text-soft); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .field select, .field input {
+      width: 100%; padding: 10px 12px; font-size: 14px;
+      border: 1px solid var(--border); border-radius: 8px;
+      background: var(--bg); color: var(--text); outline: none;
+    }
+    .field select:focus { border-color: var(--accent); }
+
+    .toggle-row { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-soft); }
+    .toggle-row input { width: auto; }
+
+    button.btn {
+      width: 100%; padding: 14px 16px; font-size: 15px; font-weight: 700;
+      border: 0; border-radius: 10px; cursor: pointer;
+      background: var(--accent); color: white;
+      transition: background 0.15s ease, transform 0.05s ease;
+      margin-top: 8px;
+    }
+    button.btn:hover { background: var(--accent-hover); }
+    button.btn:active { transform: scale(0.98); }
+    button.btn:disabled { opacity: 0.6; cursor: wait; }
+    button.btn.danger { background: var(--danger); }
+    button.btn.warn   { background: var(--warn); }
+
+    .status {
+      margin: 14px 0; padding: 14px;
+      border-radius: 10px; font-size: 13px;
+      background: #e3f3eb; color: #205a47;
+      border: 1px solid #c5e6d3;
+    }
+    .status.error { background: #fde0e0; color: #a83232; border-color: #fbb;}
+    .status.warn  { background: #fef0d3; color: #8a4f00; border-color: #fae0a5; }
+    .status .live {
+      display: inline-block; width: 8px; height: 8px;
+      border-radius: 50%; background: var(--success);
+      margin-right: 6px;
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+
+    .info {
+      margin-top: 14px; padding: 10px 12px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; font-size: 12px; color: var(--text-dim);
+      font-family: ui-monospace, monospace;
+    }
+    .info b { color: var(--text); font-family: inherit; }
+
+    .topnav {
+      position: absolute; top: 14px; left: 14px;
+      font-size: 13px; color: var(--accent);
+      text-decoration: none;
+    }
+    .topnav:hover { text-decoration: underline; }
+
+    .stats-row {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 8px; margin-top: 10px;
+    }
+    .stat-mini {
+      background: var(--bg); padding: 10px;
+      border-radius: 8px; text-align: center;
+      border: 1px solid var(--border);
+    }
+    .stat-mini .v { font-size: 16px; font-weight: 700; color: var(--accent); }
+    .stat-mini .k { font-size: 10px; color: var(--text-dim); text-transform: uppercase; margin-top: 2px; }
+  </style>
+</head>
+<body>
+
+<a href="/" class="topnav">← Voltar ao painel</a>
+
+<div class="card">
+  <div class="hero">
+    <div class="emoji">📱</div>
+    <h1>Celular como rastreador</h1>
+    <p class="sub">Transforme um celular antigo em coleira GPS — basta deixar essa página aberta com a localização ativada.</p>
+  </div>
+
+  <div class="field">
+    <label for="pet-select">Escolha o pet</label>
+    <select id="pet-select">
+      <option value="">Carregando…</option>
+    </select>
+  </div>
+
+  <div class="field">
+    <label for="interval-select">Frequência de envio</label>
+    <select id="interval-select">
+      <option value="3">A cada 3 segundos (alta)</option>
+      <option value="5" selected>A cada 5 segundos (recomendado)</option>
+      <option value="10">A cada 10 segundos (média)</option>
+      <option value="30">A cada 30 segundos (economia de bateria)</option>
+    </select>
+  </div>
+
+  <div class="field toggle-row">
+    <input type="checkbox" id="high-accuracy" checked />
+    <label for="high-accuracy" style="margin:0;text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;color:var(--text);">GPS de alta precisão</label>
+  </div>
+
+  <button id="start-btn" class="btn">▶ Iniciar envio</button>
+  <button id="stop-btn" class="btn danger" style="display:none;">■ Parar</button>
+
+  <div id="status" class="status" style="display:none;"></div>
+
+  <div class="stats-row" id="stats" style="display:none;">
+    <div class="stat-mini"><div class="v" id="sent-count">0</div><div class="k">envios</div></div>
+    <div class="stat-mini"><div class="v" id="last-accuracy">—</div><div class="k">precisão (m)</div></div>
+  </div>
+
+  <div class="info" id="last-info" style="display:none;">
+    <b>Última posição:</b><br>
+    <span id="last-coords">—</span>
+  </div>
+</div>
+
+<script>
+  const petSelect = document.getElementById('pet-select');
+  const intervalSelect = document.getElementById('interval-select');
+  const highAccuracy = document.getElementById('high-accuracy');
+  const startBtn = document.getElementById('start-btn');
+  const stopBtn = document.getElementById('stop-btn');
+  const statusEl = document.getElementById('status');
+  const statsEl = document.getElementById('stats');
+  const sentCountEl = document.getElementById('sent-count');
+  const accuracyEl = document.getElementById('last-accuracy');
+  const lastInfo = document.getElementById('last-info');
+  const lastCoords = document.getElementById('last-coords');
+
+  const speciesEmoji = { dog: '🐶', cat: '🐱', rabbit: '🐰', bird: '🐦', other: '🐾' };
+
+  let watchId = null;
+  let pollTimer = null;
+  let sentCount = 0;
+  let lastPosition = null;
+
+  function showStatus(msg, kind = 'ok') {
+    statusEl.style.display = '';
+    statusEl.className = 'status' + (kind === 'error' ? ' error' : kind === 'warn' ? ' warn' : '');
+    statusEl.innerHTML = (kind === 'ok' ? '<span class="live"></span>' : '') + msg;
+  }
+  function hideStatus() { statusEl.style.display = 'none'; }
+
+  async function loadPets() {
+    try {
+      const res = await fetch('/pets');
+      const pets = await res.json();
+      if (pets.length === 0) {
+        petSelect.innerHTML = '<option value="">Nenhum pet — cadastre um primeiro</option>';
+        startBtn.disabled = true;
+        return;
+      }
+      petSelect.innerHTML = '';
+      pets.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = `${speciesEmoji[p.species] || '🐾'} ${p.name}`;
+        petSelect.appendChild(opt);
+      });
+    } catch (e) {
+      petSelect.innerHTML = '<option value="">Erro ao carregar pets</option>';
+      showStatus('Falha ao carregar pets: ' + e.message, 'error');
+    }
+  }
+
+  async function sendPosition(position) {
+    const petId = parseInt(petSelect.value, 10);
+    if (!petId) return;
+    try {
+      const res = await fetch('/position', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pet_id: petId,
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        })
+      });
+      if (!res.ok) {
+        showStatus('Erro ao enviar: ' + await res.text(), 'error');
+        return;
+      }
+      sentCount++;
+      sentCountEl.textContent = sentCount;
+      accuracyEl.textContent = position.coords.accuracy ? position.coords.accuracy.toFixed(0) : '—';
+      lastCoords.textContent =
+        `lat: ${position.coords.latitude.toFixed(6)}\nlon: ${position.coords.longitude.toFixed(6)}\nhora: ${new Date().toLocaleTimeString('pt-BR')}`;
+      lastInfo.style.display = '';
+      lastInfo.querySelector('span').style.whiteSpace = 'pre-line';
+      showStatus(`Enviando GPS a cada ${intervalSelect.value}s — última: ${new Date().toLocaleTimeString('pt-BR')}`, 'ok');
+    } catch (e) {
+      showStatus('Falha de rede: ' + e.message, 'error');
+    }
+  }
+
+  function start() {
+    if (!petSelect.value) { showStatus('Escolha um pet primeiro.', 'warn'); return; }
+    if (!('geolocation' in navigator)) { showStatus('Seu navegador não suporta geolocalização.', 'error'); return; }
+
+    showStatus('Pedindo permissão de localização…');
+    const opts = { enableHighAccuracy: highAccuracy.checked, maximumAge: 1000, timeout: 15000 };
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        lastPosition = pos;
+        sendPosition(pos);
+
+        const intervalMs = parseInt(intervalSelect.value, 10) * 1000;
+        watchId = navigator.geolocation.watchPosition(p => { lastPosition = p; }, err => {
+          showStatus(`Erro GPS: ${err.message}`, 'error');
+        }, opts);
+        pollTimer = setInterval(() => { if (lastPosition) sendPosition(lastPosition); }, intervalMs);
+
+        startBtn.style.display = 'none';
+        stopBtn.style.display = '';
+        statsEl.style.display = '';
+        petSelect.disabled = true;
+        intervalSelect.disabled = true;
+        highAccuracy.disabled = true;
+      },
+      (err) => {
+        showStatus(`Permissão negada ou erro: ${err.message}`, 'error');
+      },
+      opts
+    );
+  }
+
+  function stop() {
+    if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+    if (pollTimer !== null) clearInterval(pollTimer);
+    watchId = null; pollTimer = null;
+    startBtn.style.display = '';
+    stopBtn.style.display = 'none';
+    petSelect.disabled = false;
+    intervalSelect.disabled = false;
+    highAccuracy.disabled = false;
+    showStatus('Envio parado. Histórico continua salvo no servidor.', 'warn');
+  }
+
+  startBtn.onclick = start;
+  stopBtn.onclick = stop;
+
+  loadPets();
+
+  // Mantém wakelock se disponível, para tela não dormir
+  let wakeLock = null;
+  async function requestWakeLock() {
+    if ('wakeLock' in navigator) {
+      try { wakeLock = await navigator.wakeLock.request('screen'); } catch (e) { /* ignore */ }
+    }
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (wakeLock !== null && document.visibilityState === 'visible') requestWakeLock();
+  });
+  startBtn.addEventListener('click', requestWakeLock);
+</script>
+
+</body>
+</html>

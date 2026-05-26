@@ -4,178 +4,347 @@
   <meta charset="UTF-8">
   <title>Pet Tracker</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#2a7763">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='52' font-size='52'%3E🐾%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    html, body { margin: 0; padding: 0; height: 100%; font-family: system-ui, sans-serif; }
-    #app { display: flex; height: 100%; }
-    #sidebar {
-      width: 320px;
-      background: #f6f7f9;
-      border-right: 1px solid #ddd;
-      padding: 14px;
-      overflow-y: auto;
-      box-sizing: border-box;
+    :root {
+      --bg:           #f6f7f9;
+      --bg-elev:      #ffffff;
+      --bg-soft:      #eef0f3;
+      --text:         #1c1f24;
+      --text-soft:    #5b6470;
+      --text-dim:     #8b939f;
+      --border:       #dfe3e8;
+      --border-soft:  #ecedf0;
+      --accent:       #2a7763;
+      --accent-hover: #226552;
+      --accent-soft:  #e3f3eb;
+      --danger:       #c0392b;
+      --danger-soft:  #fde0e0;
+      --warn:         #d97706;
+      --warn-soft:    #fef0d3;
+      --info:         #2563eb;
+      --info-soft:    #dce8ff;
+      --success:      #16a34a;
+      --shadow-sm:    0 1px 2px rgba(0,0,0,0.06);
+      --shadow-md:    0 4px 14px rgba(0,0,0,0.10);
+      --shadow-lg:    0 18px 40px rgba(0,0,0,0.18);
+      --radius-sm:    6px;
+      --radius:       10px;
+      --radius-lg:    14px;
+      --transition:   0.16s ease;
     }
-    #sidebar h1 { font-size: 16px; margin: 0 0 10px; }
-    #sidebar h2 { font-size: 13px; margin: 16px 0 6px; color: #555; text-transform: uppercase; letter-spacing: 0.5px; }
-    #map { flex: 1; position: relative; }
-    form#new-pet { display: flex; flex-direction: column; gap: 6px; }
-    form#new-pet input, form#new-pet select, form#new-pet button {
-      padding: 6px 8px; font-size: 13px; border: 1px solid #ccc; border-radius: 4px;
+    [data-theme="dark"] {
+      --bg:           #0f1216;
+      --bg-elev:      #181c22;
+      --bg-soft:      #21272f;
+      --text:         #e6e8eb;
+      --text-soft:    #b3bac3;
+      --text-dim:     #7c8593;
+      --border:       #2c333d;
+      --border-soft:  #232a32;
+      --accent:       #46c89a;
+      --accent-hover: #5dd6ab;
+      --accent-soft:  #143a2d;
+      --danger:       #ff6b5e;
+      --danger-soft:  #3d1a1a;
+      --warn:         #ffb547;
+      --warn-soft:    #3b2a13;
+      --info:         #5b8def;
+      --info-soft:    #1a2440;
+      --success:      #4ade80;
+      --shadow-sm:    0 1px 2px rgba(0,0,0,0.4);
+      --shadow-md:    0 4px 14px rgba(0,0,0,0.45);
+      --shadow-lg:    0 18px 40px rgba(0,0,0,0.6);
     }
-    form#new-pet button {
-      background: #2a7; color: white; border-color: #2a7; cursor: pointer; font-weight: 600;
-    }
-    form#new-pet button:hover { background: #239065; }
 
-    .pet-row {
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+      color: var(--text); background: var(--bg);
+      transition: background 0.25s ease, color 0.25s ease;
+    }
+    button { font-family: inherit; }
+
+    #app { display: flex; flex-direction: column; height: 100%; }
+
+    /* ============ Header ============ */
+    header.topbar {
+      flex-shrink: 0;
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 14px;
+      background: var(--bg-elev);
+      border-bottom: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+      z-index: 500;
+    }
+    .topbar .brand {
+      display: flex; align-items: center; gap: 8px;
+      font-weight: 700; font-size: 16px;
+    }
+    .topbar .brand .logo { font-size: 22px; }
+    .topbar .grow { flex: 1; }
+    .topbar .search {
+      position: relative;
+      max-width: 280px; width: 100%;
+    }
+    .topbar .search input {
+      width: 100%; padding: 7px 10px 7px 30px;
+      border: 1px solid var(--border); border-radius: 999px;
+      background: var(--bg-soft); color: var(--text);
+      font-size: 13px; outline: none;
+      transition: border-color var(--transition), background var(--transition);
+    }
+    .topbar .search input:focus { border-color: var(--accent); background: var(--bg-elev); }
+    .topbar .search::before {
+      content: '🔍'; position: absolute; left: 10px; top: 50%;
+      transform: translateY(-50%); font-size: 12px; opacity: 0.7;
+    }
+
+    .topbar .actions { display: flex; gap: 6px; align-items: center; }
+    .topbar .icon-btn {
+      width: 36px; height: 36px;
+      border-radius: 8px; border: 1px solid var(--border);
+      background: var(--bg-elev); color: var(--text);
+      cursor: pointer; font-size: 16px;
+      display: inline-flex; align-items: center; justify-content: center;
+      transition: background var(--transition), border-color var(--transition);
+    }
+    .topbar .icon-btn:hover { background: var(--bg-soft); border-color: var(--text-dim); }
+    .topbar .icon-btn.danger { color: var(--danger); }
+
+    .sse-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 999px;
+      font-size: 11px; font-weight: 600;
+      background: var(--bg-soft); color: var(--text-soft);
+      border: 1px solid var(--border);
+      cursor: default;
+    }
+    .sse-pill .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--text-dim); box-shadow: 0 0 0 0 var(--text-dim);
+    }
+    .sse-pill[data-state="connected"] { color: var(--success); border-color: var(--accent-soft); }
+    .sse-pill[data-state="connected"] .dot { background: var(--success); animation: dot-pulse 1.6s ease-in-out infinite; }
+    .sse-pill[data-state="reconnecting"] { color: var(--warn); }
+    .sse-pill[data-state="reconnecting"] .dot { background: var(--warn); }
+    .sse-pill[data-state="error"] { color: var(--danger); border-color: var(--danger-soft); }
+    .sse-pill[data-state="error"] .dot { background: var(--danger); }
+    @keyframes dot-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55); }
+      70%      { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+    }
+
+    /* ============ Main layout ============ */
+    .main {
+      flex: 1; min-height: 0;
       display: grid;
-      grid-template-columns: 26px 1fr auto;
-      gap: 6px;
-      align-items: center;
-      padding: 8px 4px;
-      border-bottom: 1px solid #eee;
-      font-size: 13px;
+      grid-template-columns: 320px 1fr;
     }
-    .pet-row .icon { font-size: 20px; }
-    .pet-row .meta { display: flex; flex-direction: column; }
-    .pet-row .name { font-weight: 600; }
-    .pet-row .sub { color: #888; font-size: 11px; }
-    .pet-row .badge {
-      display: inline-block; padding: 2px 6px; border-radius: 10px; font-size: 11px;
-      font-weight: 600; min-width: 50px; text-align: center;
-    }
-    .badge.inside  { background: #d6f5e3; color: #207244; }
-    .badge.outside { background: #fde0e0; color: #a83232; }
-    .badge.unknown { background: #eee;    color: #666;    }
-    .badge.lost    { background: #fde0e0; color: #c0392b; animation: lost-pulse 1.6s ease-in-out infinite; }
 
-    .pet-row.lost { border-left: 3px solid #e74c3c; padding-left: 6px; }
+    aside.sidebar {
+      background: var(--bg-elev);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      display: flex; flex-direction: column;
+      padding: 14px;
+      gap: 16px;
+    }
+    aside.sidebar h2 {
+      font-size: 11px; margin: 0 0 6px;
+      color: var(--text-dim); text-transform: uppercase;
+      letter-spacing: 0.6px; font-weight: 700;
+    }
+
+    form#new-pet { display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center; }
+    form#new-pet input[type="text"] {
+      grid-column: 1 / -1;
+      padding: 8px 10px; font-size: 13px;
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      background: var(--bg); color: var(--text); outline: none;
+      transition: border-color var(--transition);
+    }
+    form#new-pet input[type="text"]:focus { border-color: var(--accent); }
+    form#new-pet select, form#new-pet input[type="color"] {
+      padding: 7px 6px; font-size: 13px;
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      background: var(--bg); color: var(--text);
+    }
+    form#new-pet input[type="color"] { padding: 2px; width: 38px; height: 32px; cursor: pointer; }
+    form#new-pet button {
+      grid-column: 1 / -1;
+      padding: 8px 10px; font-size: 13px; font-weight: 600;
+      background: var(--accent); color: white;
+      border: 1px solid var(--accent); border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: background var(--transition);
+    }
+    form#new-pet button:hover { background: var(--accent-hover); }
+
+    #pet-empty {
+      text-align: center; color: var(--text-dim); font-size: 12px;
+      padding: 24px 8px; border: 2px dashed var(--border);
+      border-radius: var(--radius); margin-top: 8px;
+    }
+    #pet-empty .e { font-size: 40px; display: block; margin-bottom: 4px; }
+
+    .pet-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 10px 8px;
+      margin-bottom: 8px;
+      position: relative;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    .pet-card:hover { border-color: var(--text-dim); box-shadow: var(--shadow-sm); }
+    .pet-card.lost {
+      border-left: 3px solid var(--danger);
+      background: linear-gradient(90deg, var(--danger-soft) 0%, var(--bg) 35%);
+    }
+
+    .pet-card .row1 {
+      display: grid;
+      grid-template-columns: 32px 1fr auto;
+      gap: 8px; align-items: center;
+    }
+    .pet-card .avatar {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      background: var(--bg-soft);
+      border: 2px solid;
+    }
+    .pet-card .name { font-weight: 700; font-size: 13px; }
+    .pet-card .sub { color: var(--text-dim); font-size: 11px; }
+    .pet-card .badge-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+
+    .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 10px;
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .badge.inside  { background: var(--accent-soft); color: var(--accent); }
+    .badge.outside { background: var(--danger-soft); color: var(--danger); }
+    .badge.unknown { background: var(--bg-soft);    color: var(--text-dim); }
+    .badge.lost    { background: var(--danger-soft); color: var(--danger); animation: lost-pulse 1.6s ease-in-out infinite; }
 
     @keyframes lost-pulse {
       0%, 100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.55); }
-      70%      { box-shadow: 0 0 0 6px rgba(231, 76, 60, 0); }
+      70%      { box-shadow: 0 0 0 4px rgba(231, 76, 60, 0); }
     }
 
-    .pet-row .actions { grid-column: 2 / -1; display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
-    .pet-row .actions button {
-      font-size: 11px; padding: 3px 6px; border: 1px solid #bbb; background: white;
-      border-radius: 3px; cursor: pointer;
+    .pet-card .actions {
+      display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap;
     }
-    .pet-row .actions button:hover { background: #f0f0f0; }
-    .pet-row .actions button.danger { color: #a83232; border-color: #d8a; }
-    .pet-row .actions button.warn   { color: #cf6d10; border-color: #e67e22; background: #fff; }
-    .pet-row .actions button.warn:hover { background: #fdebd0; }
-    .pet-row .actions button.success { color: #1f6e54; border-color: #2a7; background: #fff; }
-    .pet-row .actions button.success:hover { background: #d6f5e3; }
+    .pet-card .actions button {
+      font-size: 11px; padding: 4px 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-elev); color: var(--text);
+      border-radius: 5px; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 4px;
+      transition: background var(--transition), border-color var(--transition);
+    }
+    .pet-card .actions button:hover { background: var(--bg-soft); border-color: var(--text-dim); }
+    .pet-card .actions button.danger { color: var(--danger); border-color: var(--danger-soft); }
+    .pet-card .actions button.danger:hover { background: var(--danger-soft); }
+    .pet-card .actions button.warn { color: var(--warn); border-color: var(--warn-soft); }
+    .pet-card .actions button.warn:hover { background: var(--warn-soft); }
+    .pet-card .actions button.success { color: var(--success); border-color: var(--accent-soft); }
+    .pet-card .actions button.success:hover { background: var(--accent-soft); }
 
-    /* Modal "pet perdido" — reaproveita estilos de #help-overlay */
-    #lost-overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.55);
-      display: none; align-items: center; justify-content: center;
-      z-index: 2000;
-      backdrop-filter: blur(2px);
-    }
-    #lost-overlay.open { display: flex; animation: help-fade 0.18s ease; }
-    #lost-modal {
-      background: white; border-radius: 14px;
-      width: 92%; max-width: 480px;
-      box-shadow: 0 18px 48px rgba(0,0,0,0.32);
-      padding: 28px 28px 20px;
+    /* ============ Map area ============ */
+    #map {
       position: relative;
+      min-height: 0;
+      background: var(--bg-soft);
     }
-    #lost-modal .close {
-      position: absolute; top: 10px; right: 14px;
-      background: transparent; border: 0; font-size: 24px;
-      color: #aaa; cursor: pointer; line-height: 1;
-    }
-    #lost-modal .close:hover { color: #333; }
-    #lost-modal h2 { margin: 0 0 6px; font-size: 19px; color: #c0392b; }
-    #lost-modal h2 .emoji { margin-right: 8px; }
-    #lost-modal p { margin: 0 0 10px; font-size: 13px; color: #555; }
-    #lost-modal .url-box {
-      display: block; width: 100%; box-sizing: border-box;
-      padding: 10px 12px; margin: 10px 0;
-      background: #f6f7f9; border: 1px solid #ddd; border-radius: 6px;
-      font-family: monospace; font-size: 12px;
-      word-break: break-all;
-    }
-    #lost-modal .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-    #lost-modal .actions button {
-      flex: 1; min-width: 130px; padding: 10px 12px;
-      font-size: 13px; font-weight: 600;
-      border-radius: 6px; cursor: pointer;
-      border: 1px solid #ddd; background: white; color: #333;
-    }
-    #lost-modal .actions button:hover { background: #f0f0f0; }
-    #lost-modal .actions button.primary {
-      background: #25d366; color: white; border-color: #25d366;
-    }
-    #lost-modal .actions button.primary:hover { background: #1da851; }
-    #lost-modal .actions button.copy.ok { background: #d6f5e3; color: #207244; border-color: #2a7; }
-    #lost-modal .err { color: #a83232; background: #fde0e0; padding: 8px; border-radius: 4px; font-size: 12px; }
+    .leaflet-container { background: var(--bg-soft); }
 
     .pet-marker-label {
-      background: rgba(255, 255, 255, 0.92);
-      padding: 2px 6px;
+      background: rgba(255, 255, 255, 0.94);
+      padding: 2px 7px;
       border-radius: 4px;
-      border: 1px solid #999;
+      border: 1px solid #aaa;
       font-size: 12px;
       font-weight: 600;
+      color: #222;
       white-space: nowrap;
+      box-shadow: var(--shadow-sm);
+    }
+    [data-theme="dark"] .pet-marker-label {
+      background: rgba(30, 35, 42, 0.95);
+      color: #eee; border-color: #555;
     }
 
     #zone-hint {
       position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
-      background: rgba(45, 50, 60, 0.92); color: white;
-      padding: 8px 14px; border-radius: 6px; font-size: 13px;
-      z-index: 1000; box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-      display: none;
+      background: rgba(30, 35, 42, 0.93); color: white;
+      padding: 10px 16px; border-radius: var(--radius);
+      font-size: 13px; z-index: 1000;
+      box-shadow: var(--shadow-md);
+      display: none; align-items: center; gap: 10px;
     }
     #zone-hint button {
-      margin-left: 10px; background: transparent; color: white; border: 1px solid #999;
-      border-radius: 3px; padding: 2px 8px; cursor: pointer; font-size: 12px;
+      background: rgba(255,255,255,0.15); color: white;
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 4px; padding: 3px 10px;
+      cursor: pointer; font-size: 12px;
     }
+    #zone-hint button:hover { background: rgba(255,255,255,0.28); }
 
     #alerts {
-      position: absolute; top: 78px; right: 12px;
+      position: absolute; top: 12px; right: 12px;
       display: flex; flex-direction: column; gap: 6px;
-      z-index: 1100; max-width: 360px;
+      z-index: 1100; max-width: 360px; pointer-events: none;
+    }
+    #alerts > * { pointer-events: auto; }
+
+    .alert-banner {
+      background: var(--danger); color: white;
+      padding: 10px 14px; border-radius: var(--radius);
+      font-size: 13px; font-weight: 600;
+      box-shadow: var(--shadow-md);
+      display: flex; align-items: center; gap: 10px;
+      animation: slide-in 0.25s ease;
+    }
+    .alert-banner .dismiss {
+      background: rgba(255,255,255,0.2); color: white; border: 0;
+      border-radius: 4px; padding: 3px 8px; cursor: pointer; font-size: 12px;
+    }
+    .alert-banner .dismiss:hover { background: rgba(255,255,255,0.35); }
+    @keyframes slide-in {
+      from { transform: translateX(20px); opacity: 0; }
+      to   { transform: translateX(0); opacity: 1; }
     }
 
     #help-btn {
-      position: absolute; top: 14px; right: 14px;
-      width: 52px; height: 52px;
+      position: absolute; bottom: 24px; right: 24px;
+      width: 56px; height: 56px;
       border-radius: 50%;
-      background: linear-gradient(145deg, #2a7 0%, #1f6e54 100%);
+      background: linear-gradient(145deg, var(--accent), var(--accent-hover));
       color: white; border: 0;
-      font-size: 24px; font-weight: 700;
+      font-size: 26px; font-weight: 700;
       cursor: pointer;
-      box-shadow: 0 4px 14px rgba(42, 119, 89, 0.45);
+      box-shadow: 0 6px 20px rgba(42, 119, 99, 0.45);
       z-index: 1200;
       display: flex; align-items: center; justify-content: center;
       transition: transform 0.15s ease, box-shadow 0.2s ease;
     }
     #help-btn::before {
-      content: '';
-      position: absolute; inset: -4px;
-      border-radius: 50%;
-      border: 3px solid #2a7;
-      opacity: 0;
-      pointer-events: none;
+      content: ''; position: absolute; inset: -4px;
+      border-radius: 50%; border: 3px solid var(--accent);
+      opacity: 0; pointer-events: none;
     }
-    #help-btn.pulsing {
-      animation: help-bounce 1.6s ease-in-out infinite;
-    }
-    #help-btn.pulsing::before {
-      animation: help-ripple 1.6s ease-out infinite;
-    }
-    #help-btn:hover { transform: scale(1.08); box-shadow: 0 6px 18px rgba(42, 119, 89, 0.6); }
-    #help-btn:active { transform: scale(0.96); }
-
+    #help-btn.pulsing { animation: help-bounce 1.6s ease-in-out infinite; }
+    #help-btn.pulsing::before { animation: help-ripple 1.6s ease-out infinite; }
+    #help-btn:hover { transform: scale(1.08); }
     @keyframes help-bounce {
-      0%, 100% { box-shadow: 0 4px 14px rgba(42, 119, 89, 0.45); }
-      50%      { box-shadow: 0 4px 14px rgba(42, 119, 89, 0.45), 0 0 0 8px rgba(42, 119, 89, 0.18); }
+      0%, 100% { box-shadow: 0 6px 20px rgba(42, 119, 99, 0.45); }
+      50%      { box-shadow: 0 6px 20px rgba(42, 119, 99, 0.45), 0 0 0 10px rgba(42, 119, 99, 0.18); }
     }
     @keyframes help-ripple {
       0%   { opacity: 0.7; transform: scale(0.95); }
@@ -183,66 +352,113 @@
       100% { opacity: 0;   transform: scale(1.6);  }
     }
 
-    #help-overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+    /* ============ Modais ============ */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(10, 14, 18, 0.55);
       display: none; align-items: center; justify-content: center;
       z-index: 2000;
-      backdrop-filter: blur(2px);
+      backdrop-filter: blur(3px);
     }
-    #help-overlay.open { display: flex; animation: help-fade 0.18s ease; }
-    @keyframes help-fade { from { opacity: 0; } to { opacity: 1; } }
+    .modal-overlay.open { display: flex; animation: fade-in 0.18s ease; }
+    @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 
-    #help-modal {
-      background: white; border-radius: 14px;
-      width: 92%; max-width: 480px; min-height: 420px;
-      box-shadow: 0 18px 48px rgba(0,0,0,0.32);
+    .modal {
+      background: var(--bg-elev); color: var(--text);
+      border-radius: var(--radius-lg);
+      width: 92%; max-width: 480px;
+      box-shadow: var(--shadow-lg);
       position: relative;
+      max-height: 90vh; overflow: hidden;
       display: flex; flex-direction: column;
-      overflow: hidden;
+      animation: modal-pop 0.22s cubic-bezier(0.2, 0.8, 0.3, 1.2);
     }
-    #help-modal .close {
-      position: absolute; top: 10px; right: 14px;
+    @keyframes modal-pop {
+      from { transform: translateY(20px) scale(0.97); opacity: 0; }
+      to   { transform: translateY(0)   scale(1);   opacity: 1; }
+    }
+    .modal .close {
+      position: absolute; top: 8px; right: 12px;
       background: transparent; border: 0; font-size: 24px;
-      color: #aaa; cursor: pointer; line-height: 1; z-index: 5;
+      color: var(--text-dim); cursor: pointer; line-height: 1; z-index: 5;
     }
-    #help-modal .close:hover { color: #333; }
+    .modal .close:hover { color: var(--text); }
+    .modal .body { padding: 22px 24px 18px; overflow-y: auto; }
+    .modal h2 { margin: 0 0 6px; font-size: 19px; }
+    .modal h2 .emoji { margin-right: 8px; }
+    .modal p { margin: 0 0 10px; font-size: 13px; color: var(--text-soft); line-height: 1.5; }
+    .modal .url-box {
+      display: block; width: 100%;
+      padding: 10px 12px; margin: 10px 0;
+      background: var(--bg-soft); border: 1px solid var(--border);
+      border-radius: 6px;
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 12px; word-break: break-all; color: var(--text);
+    }
+    .modal .err { color: var(--danger); background: var(--danger-soft);
+      padding: 8px 10px; border-radius: 6px; font-size: 12px; }
+    .modal .actions {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px;
+      padding-top: 14px; border-top: 1px solid var(--border-soft);
+    }
+    .modal .actions button {
+      flex: 1; min-width: 120px;
+      padding: 9px 12px; font-size: 13px; font-weight: 600;
+      border-radius: 6px; cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--bg-elev); color: var(--text);
+      transition: background var(--transition), border-color var(--transition);
+    }
+    .modal .actions button:hover { background: var(--bg-soft); }
+    .modal .actions button.primary {
+      background: var(--accent); color: white; border-color: var(--accent);
+    }
+    .modal .actions button.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+    .modal .actions button.danger {
+      background: var(--danger); color: white; border-color: var(--danger);
+    }
+    .modal .actions button.success.ok { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
 
-    .help-slides {
-      flex: 1; position: relative;
-    }
+    /* Tutorial slides */
+    #help-modal { max-width: 520px; min-height: 460px; }
+    #help-modal .body { padding: 0; flex: 1; }
+    .help-slides { flex: 1; position: relative; min-height: 380px; }
     .help-slide {
       position: absolute; inset: 0;
-      padding: 36px 32px 24px;
-      display: flex; flex-direction: column; align-items: center; text-align: center;
-      opacity: 0; transform: translateX(20px); pointer-events: none;
-      transition: opacity 0.25s ease, transform 0.25s ease;
+      padding: 36px 28px 18px;
+      display: flex; flex-direction: column;
+      align-items: center; text-align: center;
+      opacity: 0; transform: translateX(30px); pointer-events: none;
+      transition: opacity 0.3s ease, transform 0.3s ease;
     }
-    .help-slide.active {
-      opacity: 1; transform: translateX(0); pointer-events: auto;
-    }
+    .help-slide.active { opacity: 1; transform: translateX(0); pointer-events: auto; }
     .help-slide .emoji {
-      font-size: 56px; line-height: 1;
+      font-size: 52px; line-height: 1;
       width: 96px; height: 96px;
       display: flex; align-items: center; justify-content: center;
-      background: #f1faf5; border-radius: 50%;
-      margin-bottom: 14px;
+      background: var(--accent-soft); border-radius: 50%;
+      margin-bottom: 16px;
     }
-    .help-slide h2 { font-size: 19px; margin: 0 0 6px; color: #222; }
-    .help-slide .summary { font-size: 13px; color: #666; margin: 0 0 16px; line-height: 1.5; max-width: 360px; }
+    .help-slide h2 { font-size: 20px; margin: 0 0 8px; color: var(--text); }
+    .help-slide .summary {
+      font-size: 13px; color: var(--text-soft);
+      margin: 0 0 18px; line-height: 1.55; max-width: 380px;
+    }
     .help-slide .steps {
       list-style: none; padding: 0; margin: 0;
       display: flex; flex-direction: column; gap: 8px;
-      width: 100%; max-width: 360px;
+      width: 100%; max-width: 380px;
     }
     .help-slide .steps li {
       display: flex; align-items: flex-start; gap: 10px;
-      text-align: left; font-size: 13px; color: #333; line-height: 1.45;
-      padding: 8px 12px; background: #f7f8fa; border-radius: 8px;
+      text-align: left; font-size: 13px; color: var(--text);
+      line-height: 1.45;
+      padding: 9px 12px; background: var(--bg-soft); border-radius: 8px;
     }
     .help-slide .steps li .num {
       flex-shrink: 0;
       width: 22px; height: 22px; border-radius: 50%;
-      background: #2a7; color: white; font-weight: 700; font-size: 12px;
+      background: var(--accent); color: white;
+      font-weight: 700; font-size: 12px;
       display: flex; align-items: center; justify-content: center;
     }
     .help-slide .badges {
@@ -250,82 +466,210 @@
       margin-top: 4px;
     }
     .help-slide .badges span {
-      padding: 3px 10px; border-radius: 12px;
+      padding: 4px 10px; border-radius: 12px;
       font-size: 11px; font-weight: 600;
     }
-
     .help-nav {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 12px 18px; border-top: 1px solid #eee;
-      background: #fafbfc;
+      padding: 12px 18px; border-top: 1px solid var(--border);
+      background: var(--bg-soft);
     }
     .help-nav button {
-      background: transparent; border: 1px solid #ddd;
-      border-radius: 6px; padding: 6px 14px;
-      font-size: 13px; cursor: pointer; color: #444; font-weight: 600;
-      transition: background 0.12s ease, color 0.12s ease;
+      background: transparent; border: 1px solid var(--border);
+      border-radius: 6px; padding: 7px 14px;
+      font-size: 13px; cursor: pointer; color: var(--text); font-weight: 600;
+      transition: background var(--transition);
     }
-    .help-nav button:hover:not(:disabled) { background: #eef5f1; color: #2a7; border-color: #2a7; }
+    .help-nav button:hover:not(:disabled) { background: var(--bg-elev); border-color: var(--accent); color: var(--accent); }
     .help-nav button:disabled { opacity: 0.35; cursor: not-allowed; }
     .help-nav button.primary {
-      background: #2a7; color: white; border-color: #2a7;
+      background: var(--accent); color: white; border-color: var(--accent);
     }
-    .help-nav button.primary:hover { background: #239065; }
-
+    .help-nav button.primary:hover { background: var(--accent-hover); }
     .help-dots { display: flex; gap: 6px; }
     .help-dots .dot {
       width: 8px; height: 8px; border-radius: 50%;
-      background: #ddd; cursor: pointer;
-      transition: background 0.15s ease, transform 0.15s ease;
+      background: var(--border); cursor: pointer;
+      transition: background var(--transition), transform var(--transition);
     }
-    .help-dots .dot.active { background: #2a7; transform: scale(1.3); }
-    .help-dots .dot:hover { background: #b9d6c8; }
-    .alert-banner {
-      background: #c0392b; color: white;
-      padding: 10px 14px; border-radius: 6px;
-      font-size: 13px; font-weight: 600;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-      display: flex; align-items: center; gap: 8px;
+    .help-dots .dot.active { background: var(--accent); transform: scale(1.4); }
+    .help-dots .dot:hover { background: var(--accent-hover); }
+
+    /* Stats grid */
+    .stats-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 8px; margin: 12px 0;
     }
-    .alert-banner .dismiss {
-      background: rgba(255,255,255,0.2); color: white; border: 0;
-      border-radius: 3px; padding: 2px 8px; cursor: pointer; font-size: 12px;
+    .stat-tile {
+      padding: 14px 12px; border-radius: 10px;
+      background: var(--bg-soft); border: 1px solid var(--border);
+      text-align: center;
     }
-    .alert-banner .dismiss:hover { background: rgba(255,255,255,0.35); }
+    .stat-tile .v { font-size: 18px; font-weight: 700; color: var(--accent); }
+    .stat-tile .k { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.3px; margin-top: 2px; }
+
+    /* QR code container */
+    #qr-canvas {
+      display: block; margin: 14px auto; padding: 16px;
+      background: white; border-radius: 10px;
+      width: 220px; height: 220px;
+    }
+    #qr-canvas svg { width: 100%; height: 100%; }
+
+    /* Form inputs in modals */
+    .form-field { margin-bottom: 10px; }
+    .form-field label { display: block; font-size: 12px; font-weight: 600; color: var(--text-soft); margin-bottom: 4px; }
+    .form-field input, .form-field select {
+      width: 100%; padding: 8px 10px; font-size: 13px;
+      border: 1px solid var(--border); border-radius: 6px;
+      background: var(--bg); color: var(--text); outline: none;
+    }
+    .form-field input:focus, .form-field select:focus { border-color: var(--accent); }
+    .form-field input[type="color"] { width: 60px; height: 36px; padding: 2px; }
+
+    /* ============ Toasts ============ */
+    #toasts {
+      position: fixed; bottom: 16px; left: 50%;
+      transform: translateX(-50%);
+      display: flex; flex-direction: column; gap: 8px;
+      z-index: 3000; max-width: 360px; width: 90%;
+      pointer-events: none;
+    }
+    .toast {
+      pointer-events: auto;
+      padding: 10px 14px;
+      background: var(--bg-elev); color: var(--text);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      box-shadow: var(--shadow-md);
+      font-size: 13px;
+      display: flex; align-items: center; gap: 10px;
+      animation: toast-in 0.22s ease;
+    }
+    .toast.success { border-left-color: var(--success); }
+    .toast.error   { border-left-color: var(--danger); }
+    .toast.warn    { border-left-color: var(--warn); }
+    .toast.info    { border-left-color: var(--info); }
+    .toast .icon { font-size: 18px; }
+    .toast .msg { flex: 1; }
+    .toast .x {
+      background: transparent; border: 0;
+      color: var(--text-dim); cursor: pointer;
+      font-size: 16px; line-height: 1; padding: 0 4px;
+    }
+    .toast .x:hover { color: var(--text); }
+    @keyframes toast-in {
+      from { transform: translateY(20px); opacity: 0; }
+      to   { transform: translateY(0); opacity: 1; }
+    }
+    @keyframes toast-out {
+      to { transform: translateY(20px); opacity: 0; }
+    }
+    .toast.leaving { animation: toast-out 0.22s ease forwards; }
+
+    /* ============ Responsive ============ */
+    .topbar .icon-btn.sidebar-toggle { display: none; }
+    #sidebar-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+      z-index: 1400; display: none;
+    }
+    #sidebar-backdrop.open { display: block; }
+
+    @media (max-width: 720px) {
+      .main { grid-template-columns: 1fr; }
+      aside.sidebar {
+        position: fixed; inset: 0 auto 0 0;
+        width: 86%; max-width: 340px;
+        z-index: 1500;
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+        box-shadow: var(--shadow-lg);
+      }
+      aside.sidebar.open { transform: translateX(0); }
+      .topbar .icon-btn.sidebar-toggle { display: inline-flex; }
+      .topbar .search { max-width: 100%; }
+      .topbar .sse-pill { display: none; }
+      #help-btn { bottom: 16px; right: 16px; width: 50px; height: 50px; font-size: 22px; }
+    }
+    @media (max-width: 480px) {
+      .topbar .brand .label { display: none; }
+    }
   </style>
 </head>
 <body>
 
 <div id="app">
-  <aside id="sidebar">
-    <h1>🐾 Pet Tracker</h1>
+  <header class="topbar">
+    <button id="sidebar-toggle" class="icon-btn sidebar-toggle" aria-label="Abrir lista de pets">☰</button>
+    <div class="brand">
+      <span class="logo">🐾</span><span class="label">Pet Tracker</span>
+    </div>
+    <div class="grow"></div>
+    <div class="search">
+      <input id="pet-search" type="text" placeholder="Buscar pet…" autocomplete="off" />
+    </div>
+    <div class="actions">
+      <span class="sse-pill" id="sse-pill" data-state="connecting" title="Status da conexão em tempo real">
+        <span class="dot"></span><span id="sse-text">conectando</span>
+      </span>
+      <a href="/mural" class="icon-btn" title="Mural público de pets perdidos" aria-label="Mural">🚨</a>
+      <a href="/sender" class="icon-btn" title="Usar celular como rastreador" aria-label="Sender">📱</a>
+      <button id="theme-toggle" class="icon-btn" title="Alternar tema" aria-label="Tema">🌓</button>
+    </div>
+  </header>
 
-    <h2>Adicionar pet</h2>
-    <form id="new-pet">
-      <input id="pet-name" type="text" placeholder="Nome" required />
-      <select id="pet-species">
-        <option value="dog">🐶 Cachorro</option>
-        <option value="cat">🐱 Gato</option>
-      </select>
-      <button type="submit">Adicionar</button>
-    </form>
+  <div class="main">
+    <aside id="sidebar" class="sidebar">
+      <div>
+        <h2>Adicionar pet</h2>
+        <form id="new-pet">
+          <input id="pet-name" type="text" placeholder="Nome do pet" required maxlength="60" />
+          <select id="pet-species">
+            <option value="dog">🐶 Cachorro</option>
+            <option value="cat">🐱 Gato</option>
+            <option value="rabbit">🐰 Coelho</option>
+            <option value="bird">🐦 Pássaro</option>
+            <option value="other">🐾 Outro</option>
+          </select>
+          <input id="pet-color" type="color" value="#2a7763" title="Cor da trilha no mapa" />
+          <button type="submit">+ Adicionar</button>
+        </form>
+      </div>
 
-    <h2>Pets</h2>
-    <div id="pet-list"></div>
-  </aside>
+      <div>
+        <h2>Meus pets <span id="pet-count" style="color:var(--text-dim);font-weight:400;"></span></h2>
+        <div id="pet-list"></div>
+        <div id="pet-empty" style="display:none;">
+          <span class="e">🐶</span>
+          Nenhum pet ainda.<br>
+          Cadastre seu primeiro acima!
+        </div>
+      </div>
+    </aside>
+    <div id="sidebar-backdrop"></div>
 
-  <div id="help-overlay" role="dialog" aria-modal="true" aria-labelledby="help-title">
-    <div id="help-modal">
-      <button class="close" id="help-close" aria-label="Fechar">×</button>
+    <div id="map">
+      <div id="zone-hint"></div>
+      <div id="alerts"></div>
+      <button id="help-btn" type="button" class="pulsing" title="Como usar" aria-label="Como usar">?</button>
+    </div>
+  </div>
+</div>
 
+<!-- Tutorial -->
+<div id="help-overlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="help-title">
+  <div class="modal" id="help-modal">
+    <button class="close" id="help-close" aria-label="Fechar">×</button>
+    <div class="body">
       <div class="help-slides" id="help-slides">
 
         <section class="help-slide active" data-slide="0">
           <div class="emoji">🐾</div>
-          <h2 id="help-title">Bem-vindo ao Pet Tracker</h2>
-          <p class="summary">Acompanhe seus pets em tempo real e receba alertas quando saírem da zona segura.</p>
+          <h2 id="help-title">Bem-vindo ao Pet Tracker!</h2>
+          <p class="summary">Acompanhe seus pets em tempo real, defina zonas seguras e receba alertas quando algo sair do esperado.</p>
           <ul class="steps">
-            <li><span class="num">1</span><span>Cadastre seu pet (cachorro ou gato).</span></li>
+            <li><span class="num">1</span><span>Cadastre seu pet (cão, gato, etc).</span></li>
             <li><span class="num">2</span><span>Defina uma zona segura no mapa.</span></li>
             <li><span class="num">3</span><span>Receba alertas se ele sair dela.</span></li>
           </ul>
@@ -334,22 +678,22 @@
         <section class="help-slide" data-slide="1">
           <div class="emoji">➕</div>
           <h2>Adicionar um pet</h2>
-          <p class="summary">Use o formulário no painel lateral para cadastrar pets.</p>
+          <p class="summary">No painel lateral, preencha nome, espécie e (opcional) escolha uma cor para o rastro no mapa.</p>
           <ul class="steps">
-            <li><span class="num">1</span><span>Digite o <b>nome</b> do pet.</span></li>
-            <li><span class="num">2</span><span>Escolha a <b>espécie</b>: 🐶 ou 🐱.</span></li>
-            <li><span class="num">3</span><span>Clique em <b>Adicionar</b> — pronto, ele aparece no mapa.</span></li>
+            <li><span class="num">1</span><span>Digite o <b>nome</b>.</span></li>
+            <li><span class="num">2</span><span>Escolha <b>espécie</b> e <b>cor</b>.</span></li>
+            <li><span class="num">3</span><span>Clique em <b>Adicionar</b>.</span></li>
           </ul>
         </section>
 
         <section class="help-slide" data-slide="2">
           <div class="emoji">🛡️</div>
           <h2>Definir zona segura</h2>
-          <p class="summary">Em dois cliques no mapa você desenha uma zona de proteção para o pet.</p>
+          <p class="summary">Em dois cliques no mapa você desenha uma zona de proteção.</p>
           <ul class="steps">
-            <li><span class="num">1</span><span>Na linha do pet, clique em <b>Definir zona</b>.</span></li>
-            <li><span class="num">2</span><span><b>1º clique:</b> escolha o centro (ex.: sua casa).</span></li>
-            <li><span class="num">3</span><span><b>2º clique:</b> defina o raio. Mostra os metros em tempo real.</span></li>
+            <li><span class="num">1</span><span>Na linha do pet, clique em <b>Zona</b>.</span></li>
+            <li><span class="num">2</span><span><b>1º clique:</b> escolha o centro.</span></li>
+            <li><span class="num">3</span><span><b>2º clique:</b> defina o raio.</span></li>
           </ul>
         </section>
 
@@ -358,115 +702,260 @@
           <h2>Alertas em tempo real</h2>
           <p class="summary">Quando o pet cruza a zona segura, três avisos disparam juntos.</p>
           <ul class="steps">
-            <li><span class="num">🔴</span><span>Banner vermelho no topo do mapa.</span></li>
-            <li><span class="num">🔊</span><span>Beep no navegador (2 tons curtos).</span></li>
-            <li><span class="num">🔔</span><span>Notificação do sistema (autorize no 1º clique).</span></li>
+            <li><span class="num">🔴</span><span>Banner vermelho no mapa.</span></li>
+            <li><span class="num">🔊</span><span>Beep no navegador.</span></li>
+            <li><span class="num">🔔</span><span>Notificação do sistema.</span></li>
           </ul>
         </section>
 
         <section class="help-slide" data-slide="4">
           <div class="emoji">📍</div>
           <h2>Status e localização</h2>
-          <p class="summary">Cada pet tem um indicador colorido no painel.</p>
+          <p class="summary">Cada pet tem indicador colorido no painel:</p>
           <div class="badges">
-            <span style="background:#d6f5e3;color:#207244;">🟢 dentro</span>
-            <span style="background:#fde0e0;color:#a83232;">🔴 fora</span>
-            <span style="background:#eee;color:#666;">sem zona</span>
+            <span style="background:var(--accent-soft);color:var(--accent);">🟢 dentro</span>
+            <span style="background:var(--danger-soft);color:var(--danger);">🔴 fora</span>
+            <span style="background:var(--bg-soft);color:var(--text-dim);">sem zona</span>
           </div>
-          <p class="summary" style="margin-top:14px;">Clique em <b>Localizar</b> na linha de um pet para centralizar o mapa nele.</p>
+          <p class="summary" style="margin-top:16px;">Botão <b>Centro</b> centraliza o mapa no pet.</p>
         </section>
 
         <section class="help-slide" data-slide="5">
           <div class="emoji">🚨</div>
           <h2>Pet perdido</h2>
-          <p class="summary">Marque o pet como perdido e gere um link público para divulgar nas redes.</p>
+          <p class="summary">Marque o pet como perdido para gerar link público e divulgar.</p>
           <ul class="steps">
-            <li><span class="num">1</span><span>Na linha do pet, clique em <b>🚨 Marcar como perdido</b>.</span></li>
-            <li><span class="num">2</span><span>Copie o link gerado e cole em grupos do WhatsApp.</span></li>
-            <li><span class="num">3</span><span>Quando achar, clique em <b>✅ Marcar como encontrado</b> — o link expira.</span></li>
+            <li><span class="num">1</span><span>Clique em <b>🚨 Perdido</b>.</span></li>
+            <li><span class="num">2</span><span>Compartilhe o link no WhatsApp.</span></li>
+            <li><span class="num">3</span><span>Quando achar, clique em <b>✅ Encontrado</b>.</span></li>
+          </ul>
+        </section>
+
+        <section class="help-slide" data-slide="6">
+          <div class="emoji">📷</div>
+          <h2>QR code de avistamento</h2>
+          <p class="summary">Cada pet tem um QR único. Imprima e coloque na coleira — qualquer pessoa pode escanear e reportar onde viu seu pet, mesmo sem GPS na coleira.</p>
+          <ul class="steps">
+            <li><span class="num">1</span><span>Clique em <b>📷 QR</b> na linha do pet.</span></li>
+            <li><span class="num">2</span><span>Imprima ou baixe o QR.</span></li>
+            <li><span class="num">3</span><span>Quem escanear, manda a localização anonimamente.</span></li>
+          </ul>
+        </section>
+
+        <section class="help-slide" data-slide="7">
+          <div class="emoji">📱</div>
+          <h2>Celular como rastreador</h2>
+          <p class="summary">Sem coleira GPS? Use um celular antigo amarrado na coleira como tracker.</p>
+          <ul class="steps">
+            <li><span class="num">1</span><span>Abra <b>📱 Sender</b> no menu superior.</span></li>
+            <li><span class="num">2</span><span>Escolha o pet.</span></li>
+            <li><span class="num">3</span><span>Autorize a localização — o celular envia GPS automaticamente.</span></li>
+          </ul>
+        </section>
+
+        <section class="help-slide" data-slide="8">
+          <div class="emoji">📊</div>
+          <h2>Estatísticas & atalhos</h2>
+          <p class="summary">Acompanhe o quanto seu pet se move.</p>
+          <ul class="steps">
+            <li><span class="num">📊</span><span>Botão <b>Stats</b>: distância, passos, tempo ativo.</span></li>
+            <li><span class="num">🔍</span><span>Busca no topo filtra a lista.</span></li>
+            <li><span class="num">🌓</span><span>Modo escuro no canto superior.</span></li>
           </ul>
         </section>
 
       </div>
-
-      <div class="help-nav">
-        <button id="help-prev" type="button">← Anterior</button>
-        <div class="help-dots" id="help-dots"></div>
-        <button id="help-next" type="button" class="primary">Próximo →</button>
-      </div>
+    </div>
+    <div class="help-nav">
+      <button id="help-prev" type="button">← Anterior</button>
+      <div class="help-dots" id="help-dots"></div>
+      <button id="help-next" type="button" class="primary">Próximo →</button>
     </div>
   </div>
+</div>
 
-  <div id="map">
-    <div id="zone-hint"></div>
-    <div id="alerts"></div>
-    <button id="help-btn" type="button" class="pulsing" title="Como usar" aria-label="Como usar">?</button>
-  </div>
-
-  <div id="lost-overlay" role="dialog" aria-modal="true" aria-labelledby="lost-title">
-    <div id="lost-modal">
-      <button class="close" id="lost-close" aria-label="Fechar">×</button>
-      <h2 id="lost-title"><span class="emoji">🚨</span><span id="lost-pet-label">Pet</span> está marcado(a) como perdido(a)</h2>
-      <p>Compartilhe esse link com vizinhos para ajudar a achar:</p>
+<!-- Lost modal -->
+<div id="lost-overlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="lost-title">
+  <div class="modal">
+    <button class="close" id="lost-close" aria-label="Fechar">×</button>
+    <div class="body">
+      <h2 id="lost-title"><span class="emoji">🚨</span><span id="lost-pet-label">Pet</span> está perdido</h2>
+      <p>Compartilhe esse link com vizinhos:</p>
       <code class="url-box" id="lost-url">aguardando…</code>
       <div class="err" id="lost-err" style="display:none;"></div>
       <div class="actions">
-        <button id="lost-copy" class="copy" type="button">📋 Copiar link</button>
-        <button id="lost-share" class="primary" type="button">Compartilhar no WhatsApp</button>
+        <button id="lost-copy" type="button">📋 Copiar link</button>
+        <button id="lost-share" class="primary" type="button">Enviar no WhatsApp</button>
       </div>
     </div>
   </div>
 </div>
 
+<!-- Stats modal -->
+<div id="stats-overlay" class="modal-overlay" role="dialog" aria-modal="true">
+  <div class="modal">
+    <button class="close" id="stats-close" aria-label="Fechar">×</button>
+    <div class="body">
+      <h2><span class="emoji">📊</span><span id="stats-title">Estatísticas</span></h2>
+      <p id="stats-summary">—</p>
+      <div class="stats-grid" id="stats-grid"></div>
+      <div class="actions">
+        <button id="stats-ok" class="primary" type="button">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- QR modal -->
+<div id="qr-overlay" class="modal-overlay" role="dialog" aria-modal="true">
+  <div class="modal">
+    <button class="close" id="qr-close" aria-label="Fechar">×</button>
+    <div class="body">
+      <h2><span class="emoji">📷</span>QR de <span id="qr-pet-name">Pet</span></h2>
+      <p>Cole esse QR na coleira. Quem escanear pode reportar onde viu seu pet sem precisar do seu contato.</p>
+      <div id="qr-canvas"></div>
+      <code class="url-box" id="qr-url">—</code>
+      <div class="actions">
+        <button id="qr-copy" type="button">📋 Copiar link</button>
+        <button id="qr-print" class="primary" type="button">🖨️ Imprimir</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit modal -->
+<div id="edit-overlay" class="modal-overlay" role="dialog" aria-modal="true">
+  <div class="modal">
+    <button class="close" id="edit-close" aria-label="Fechar">×</button>
+    <div class="body">
+      <h2><span class="emoji">✏️</span>Editar pet</h2>
+      <form id="edit-form" autocomplete="off">
+        <div class="form-field">
+          <label>Nome</label>
+          <input id="edit-name" type="text" maxlength="60" required />
+        </div>
+        <div class="form-field">
+          <label>Espécie</label>
+          <select id="edit-species">
+            <option value="dog">🐶 Cachorro</option>
+            <option value="cat">🐱 Gato</option>
+            <option value="rabbit">🐰 Coelho</option>
+            <option value="bird">🐦 Pássaro</option>
+            <option value="other">🐾 Outro</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Cor da trilha</label>
+          <input id="edit-color" type="color" />
+        </div>
+        <div class="actions">
+          <button type="button" id="edit-cancel">Cancelar</button>
+          <button type="submit" class="primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm modal -->
+<div id="confirm-overlay" class="modal-overlay" role="dialog" aria-modal="true">
+  <div class="modal" style="max-width: 400px;">
+    <button class="close" id="confirm-close" aria-label="Fechar">×</button>
+    <div class="body">
+      <h2 id="confirm-title"><span class="emoji">⚠️</span>Confirmar</h2>
+      <p id="confirm-msg">Tem certeza?</p>
+      <div class="actions">
+        <button id="confirm-cancel" type="button">Cancelar</button>
+        <button id="confirm-ok" class="danger" type="button">Confirmar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 <script>
+  // ========== Constants ==========
   const initialLat = -31.770687426923516;
   const initialLng = -52.34135057529372;
+  const speciesIcon = { dog: '🐶', cat: '🐱', rabbit: '🐰', bird: '🐦', other: '🐾' };
+  const trailColors = ['#c0392b', '#2980b9', '#8e44ad', '#16a085', '#d35400', '#27ae60', '#2c3e50'];
+  const THEME_KEY = 'pet-tracker:theme';
+  const HELP_SEEN_KEY = 'pet-tracker:help-seen';
 
+  // ========== Theme ==========
+  function applyTheme(theme) {
+    if (theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    else document.documentElement.removeAttribute('data-theme');
+    document.querySelector('meta[name="theme-color"]').setAttribute('content',
+      theme === 'dark' ? '#0f1216' : '#2a7763');
+  }
+  function currentTheme() { return localStorage.getItem(THEME_KEY) || 'light'; }
+  applyTheme(currentTheme());
+  document.getElementById('theme-toggle').addEventListener('click', () => {
+    const next = currentTheme() === 'dark' ? 'light' : 'dark';
+    localStorage.setItem(THEME_KEY, next);
+    applyTheme(next);
+  });
+
+  // ========== Map ==========
   const map = L.map('map').setView([initialLat, initialLng], 17);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; OpenStreetMap'
+    maxZoom: 19, attribution: '&copy; OpenStreetMap'
   }).addTo(map);
 
   L.circleMarker([initialLat, initialLng], {
-    radius: 6, color: '#2a7', fillColor: '#2a7', fillOpacity: 0.9
-  }).addTo(map).bindTooltip("Início");
+    radius: 5, color: '#2a7763', fillColor: '#2a7763', fillOpacity: 0.9
+  }).addTo(map).bindTooltip("Praça Coronel Pedro Osório");
 
-  const speciesIcon = { dog: '🐶', cat: '🐱' };
-  const trailColors = ['#c0392b', '#2980b9', '#8e44ad', '#16a085', '#d35400', '#27ae60', '#2c3e50'];
-
-  // pet_id -> { pet, marker, trail, zoneCircle, lastStep }
+  // pet_id -> { pet, marker, trail, zoneCircle, sightingMarkers, lastStep, outside }
   const pets = new Map();
+  let searchQuery = '';
 
-  function makeIcon(species) {
-    return L.divIcon({
-      html: `<div style="font-size:26px;line-height:26px;">${speciesIcon[species] || '🐾'}</div>`,
-      className: 'pet-icon',
-      iconSize: [28, 28],
-      iconAnchor: [14, 14]
-    });
+  function colorFor(pet) {
+    return pet.color || trailColors[(pet.id - 1) % trailColors.length];
   }
 
-  function colorFor(petId) {
-    return trailColors[(petId - 1) % trailColors.length];
+  function makeIcon(pet) {
+    return L.divIcon({
+      html: `<div style="font-size:26px;line-height:26px;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5));">${speciesIcon[pet.species] || '🐾'}</div>`,
+      className: 'pet-icon',
+      iconSize: [28, 28], iconAnchor: [14, 14]
+    });
   }
 
   function ensurePet(pet) {
     let entry = pets.get(pet.id);
     if (!entry) {
-      const marker = L.marker([initialLat, initialLng], { icon: makeIcon(pet.species) })
+      const marker = L.marker([initialLat, initialLng], { icon: makeIcon(pet) })
         .addTo(map)
         .bindTooltip(pet.name, { permanent: true, direction: 'top', className: 'pet-marker-label', offset: [0, -14] });
-      const trail = L.polyline([], { color: colorFor(pet.id), weight: 3, opacity: 0.85 }).addTo(map);
-      entry = { pet, marker, trail, zoneCircle: null, lastStep: -1, outside: false };
+      const trail = L.polyline([], { color: colorFor(pet), weight: 3, opacity: 0.85 }).addTo(map);
+      entry = { pet, marker, trail, zoneCircle: null, sightingMarkers: [], lastStep: -1, outside: false };
       pets.set(pet.id, entry);
     } else {
       entry.pet = pet;
+      entry.marker.setIcon(makeIcon(pet));
+      entry.marker.unbindTooltip();
+      entry.marker.bindTooltip(pet.name, { permanent: true, direction: 'top', className: 'pet-marker-label', offset: [0, -14] });
+      entry.trail.setStyle({ color: colorFor(pet) });
     }
     syncZone(entry);
     renderPetList();
     return entry;
+  }
+
+  function removePetEntry(petId) {
+    const entry = pets.get(petId);
+    if (!entry) return;
+    if (entry.marker) map.removeLayer(entry.marker);
+    if (entry.trail) map.removeLayer(entry.trail);
+    if (entry.zoneCircle) map.removeLayer(entry.zoneCircle);
+    entry.sightingMarkers.forEach(m => map.removeLayer(m));
+    pets.delete(petId);
+    renderPetList();
   }
 
   function syncZone(entry) {
@@ -478,10 +967,9 @@
     if (z) {
       entry.zoneCircle = L.circle([z.center_lat, z.center_lon], {
         radius: z.radius_meters,
-        color: colorFor(entry.pet.id),
-        weight: 2,
-        opacity: 0.7,
-        fillColor: colorFor(entry.pet.id),
+        color: colorFor(entry.pet),
+        weight: 2, opacity: 0.7,
+        fillColor: colorFor(entry.pet),
         fillOpacity: 0.12
       }).addTo(map);
     }
@@ -494,51 +982,71 @@
     else parts.push(entry.outside
       ? `<span class="badge outside">🔴 fora</span>`
       : `<span class="badge inside">🟢 dentro</span>`);
-    return parts.join(' ');
+    return parts.join('');
   }
 
   function renderPetList() {
     const container = document.getElementById('pet-list');
     container.innerHTML = '';
-    [...pets.values()]
-      .sort((a, b) => a.pet.id - b.pet.id)
-      .forEach((entry) => {
-        const { pet, lastStep } = entry;
-        const row = document.createElement('div');
-        row.className = 'pet-row' + (pet.lost ? ' lost' : '');
-        const lostBtn = pet.lost
-          ? `<button data-act="found" class="success">✅ Marcar como encontrado</button>`
-          : `<button data-act="lost" class="warn">🚨 Marcar como perdido</button>`;
-        row.innerHTML = `
-          <span class="icon">${speciesIcon[pet.species] || '🐾'}</span>
-          <span class="meta">
-            <span class="name">${escapeHTML(pet.name)}</span>
-            <span class="sub">passo ${lastStep < 0 ? '—' : lastStep}</span>
-          </span>
-          <span class="status">${statusBadge(entry)}</span>
-          <span class="actions">
-            <button data-act="pan">Localizar</button>
-            <button data-act="zone">${pet.safe_zone ? 'Editar zona' : 'Definir zona'}</button>
-            ${pet.safe_zone ? `<button data-act="zone-del" class="danger">Remover zona</button>` : ''}
-            ${lostBtn}
-          </span>
-        `;
-        row.querySelector('[data-act="pan"]').onclick = () => map.panTo(entry.marker.getLatLng());
-        row.querySelector('[data-act="zone"]').onclick = () => beginZoneDrawing(pet.id);
-        const del = row.querySelector('[data-act="zone-del"]');
-        if (del) del.onclick = () => deleteZone(pet.id);
-        const lostB = row.querySelector('[data-act="lost"]');
-        if (lostB) lostB.onclick = () => markLost(pet.id);
-        const foundB = row.querySelector('[data-act="found"]');
-        if (foundB) foundB.onclick = () => clearLost(pet.id);
-        container.appendChild(row);
-      });
+    const all = [...pets.values()].sort((a, b) => a.pet.id - b.pet.id);
+    const filtered = searchQuery
+      ? all.filter(e => e.pet.name.toLowerCase().includes(searchQuery))
+      : all;
+    document.getElementById('pet-count').textContent = `(${filtered.length}${searchQuery && filtered.length !== all.length ? `/${all.length}` : ''})`;
+    document.getElementById('pet-empty').style.display = all.length === 0 ? '' : 'none';
+
+    filtered.forEach(entry => {
+      const { pet, lastStep } = entry;
+      const card = document.createElement('div');
+      card.className = 'pet-card' + (pet.lost ? ' lost' : '');
+      const trailColor = colorFor(pet);
+      const lostBtn = pet.lost
+        ? `<button data-act="found" class="success" title="Marcar como encontrado">✅ Achei</button>`
+        : `<button data-act="lost" class="warn" title="Marcar como perdido">🚨 Perdido</button>`;
+      card.innerHTML = `
+        <div class="row1">
+          <div class="avatar" style="border-color: ${escapeAttr(trailColor)};">${speciesIcon[pet.species] || '🐾'}</div>
+          <div>
+            <div class="name">${escapeHTML(pet.name)}</div>
+            <div class="sub">passo ${lastStep < 0 ? '—' : lastStep}</div>
+          </div>
+          <div class="badge-wrap">${statusBadge(entry)}</div>
+        </div>
+        <div class="actions">
+          <button data-act="pan" title="Centralizar mapa">📍 Centro</button>
+          <button data-act="zone" title="${pet.safe_zone ? 'Redesenhar zona' : 'Definir zona'}">🛡️ Zona</button>
+          ${pet.safe_zone ? `<button data-act="zone-del" class="danger" title="Remover zona">🗑️</button>` : ''}
+          <button data-act="stats" title="Estatísticas">📊 Stats</button>
+          <button data-act="qr" title="QR para coleira">📷 QR</button>
+          <button data-act="edit" title="Editar">✏️</button>
+          ${lostBtn}
+          <button data-act="delete" class="danger" title="Excluir pet">🗑️ Excluir</button>
+        </div>
+      `;
+      card.querySelector('[data-act="pan"]').onclick = () => {
+        map.flyTo(entry.marker.getLatLng(), Math.max(map.getZoom(), 17));
+        closeSidebar();
+      };
+      card.querySelector('[data-act="zone"]').onclick = () => { beginZoneDrawing(pet.id); closeSidebar(); };
+      const zdel = card.querySelector('[data-act="zone-del"]');
+      if (zdel) zdel.onclick = () => deleteZone(pet.id);
+      card.querySelector('[data-act="stats"]').onclick = () => openStats(pet.id);
+      card.querySelector('[data-act="qr"]').onclick = () => openQR(pet.id);
+      card.querySelector('[data-act="edit"]').onclick = () => openEdit(pet.id);
+      const lostB = card.querySelector('[data-act="lost"]');
+      if (lostB) lostB.onclick = () => markLost(pet.id);
+      const foundB = card.querySelector('[data-act="found"]');
+      if (foundB) foundB.onclick = () => clearLost(pet.id);
+      card.querySelector('[data-act="delete"]').onclick = () => confirmDelete(pet.id, pet.name);
+      container.appendChild(card);
+    });
   }
 
   function escapeHTML(s) {
     return String(s).replace(/[&<>"']/g, ch =>
       ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[ch]);
   }
+  function escapeAttr(s) { return escapeHTML(s); }
 
   function applyPosition(pos) {
     const entry = pets.get(pos.pet_id);
@@ -551,25 +1059,21 @@
     renderPetList();
   }
 
-  // ---------- Desenho de zona ----------
-
-  let zoneDrawState = null; // { petId, step: 'center' | 'radius', center?: LatLng, previewLine?, previewCircle? }
-
+  // ========== Zone drawing ==========
+  let zoneDrawState = null;
   function setHint(html) {
     const h = document.getElementById('zone-hint');
     if (!html) { h.style.display = 'none'; h.innerHTML = ''; return; }
     h.innerHTML = html;
-    h.style.display = 'block';
+    h.style.display = 'flex';
   }
-
   function beginZoneDrawing(petId) {
     cancelZoneDrawing();
     zoneDrawState = { petId, step: 'center' };
     map.getContainer().style.cursor = 'crosshair';
-    setHint(`Clique no <b>centro</b> da zona segura. <button id="zd-cancel">Cancelar</button>`);
+    setHint(`<span>Clique no <b>centro</b> da zona segura.</span><button id="zd-cancel">Cancelar</button>`);
     document.getElementById('zd-cancel').onclick = cancelZoneDrawing;
   }
-
   function cancelZoneDrawing() {
     if (!zoneDrawState) return;
     if (zoneDrawState.previewLine) map.removeLayer(zoneDrawState.previewLine);
@@ -578,7 +1082,6 @@
     map.getContainer().style.cursor = '';
     setHint(null);
   }
-
   map.on('click', (e) => {
     if (!zoneDrawState) return;
     if (zoneDrawState.step === 'center') {
@@ -591,7 +1094,7 @@
         color: '#444', weight: 1, dashArray: '4 4', opacity: 0.7
       }).addTo(map);
       zoneDrawState.step = 'radius';
-      setHint(`Mova o cursor e clique para definir o <b>raio</b>. <button id="zd-cancel">Cancelar</button>`);
+      setHint(`<span>Mova o cursor e clique para definir o <b>raio</b>.</span><button id="zd-cancel">Cancelar</button>`);
       document.getElementById('zd-cancel').onclick = cancelZoneDrawing;
     } else if (zoneDrawState.step === 'radius') {
       const radius = zoneDrawState.center.distanceTo(e.latlng);
@@ -600,37 +1103,55 @@
       saveZone(petId, center.lat, center.lng, radius);
     }
   });
-
   map.on('mousemove', (e) => {
     if (!zoneDrawState || zoneDrawState.step !== 'radius') return;
     const r = zoneDrawState.center.distanceTo(e.latlng);
     zoneDrawState.previewCircle.setRadius(r);
     zoneDrawState.previewLine.setLatLngs([zoneDrawState.center, e.latlng]);
-    setHint(`Raio: <b>${r.toFixed(0)} m</b> — clique para confirmar. <button id="zd-cancel">Cancelar</button>`);
+    setHint(`<span>Raio: <b>${r.toFixed(0)} m</b> — clique para confirmar.</span><button id="zd-cancel">Cancelar</button>`);
     document.getElementById('zd-cancel').onclick = cancelZoneDrawing;
   });
 
   async function saveZone(petId, lat, lng, radius) {
-    const res = await fetch(`/pets/${petId}/zone`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ center_lat: lat, center_lon: lng, radius_meters: radius })
-    });
-    if (!res.ok) {
-      alert('Erro ao salvar zona: ' + await res.text());
-      return;
-    }
-    const zone = await res.json();
-    const entry = pets.get(petId);
-    if (entry) {
-      entry.pet.safe_zone = zone;
-      syncZone(entry);
-      renderPetList();
+    try {
+      const res = await fetch(`/pets/${petId}/zone`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ center_lat: lat, center_lon: lng, radius_meters: radius })
+      });
+      if (!res.ok) { toast('Erro ao salvar zona: ' + await res.text(), 'error'); return; }
+      const zone = await res.json();
+      const entry = pets.get(petId);
+      if (entry) {
+        entry.pet.safe_zone = zone;
+        syncZone(entry);
+        renderPetList();
+      }
+      toast(`Zona definida (${radius.toFixed(0)}m)`, 'success');
+    } catch (e) {
+      toast('Falha de rede: ' + e.message, 'error');
     }
   }
 
-  // ---------- Modo perdido ----------
+  async function deleteZone(petId) {
+    try {
+      const res = await fetch(`/pets/${petId}/zone`, { method: 'DELETE' });
+      if (!res.ok && res.status !== 204) {
+        toast('Erro ao remover zona: ' + await res.text(), 'error');
+        return;
+      }
+      const entry = pets.get(petId);
+      if (entry) {
+        entry.pet.safe_zone = null;
+        entry.outside = false;
+        syncZone(entry);
+        renderPetList();
+      }
+      toast('Zona removida', 'info');
+    } catch (e) { toast('Falha de rede: ' + e.message, 'error'); }
+  }
 
+  // ========== Lost ==========
   const lostOverlay = document.getElementById('lost-overlay');
   const lostUrl = document.getElementById('lost-url');
   const lostErr = document.getElementById('lost-err');
@@ -642,27 +1163,20 @@
   function openLostModal(petName, url, err) {
     lostPetLabel.textContent = petName;
     if (err) {
-      lostErr.style.display = 'block';
-      lostErr.textContent = err;
-      lostUrl.textContent = '—';
-      currentLostUrl = '';
+      lostErr.style.display = 'block'; lostErr.textContent = err;
+      lostUrl.textContent = '—'; currentLostUrl = '';
     } else {
       lostErr.style.display = 'none';
-      lostUrl.textContent = url;
-      currentLostUrl = url;
+      lostUrl.textContent = url; currentLostUrl = url;
     }
     lostCopyBtn.classList.remove('ok');
     lostCopyBtn.textContent = '📋 Copiar link';
     lostOverlay.classList.add('open');
   }
-
   function closeLostModal() { lostOverlay.classList.remove('open'); }
 
   document.getElementById('lost-close').onclick = closeLostModal;
   lostOverlay.addEventListener('click', (e) => { if (e.target === lostOverlay) closeLostModal(); });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && lostOverlay.classList.contains('open')) closeLostModal();
-  });
 
   lostCopyBtn.onclick = async () => {
     if (!currentLostUrl) return;
@@ -674,16 +1188,14 @@
         lostCopyBtn.textContent = '📋 Copiar link';
         lostCopyBtn.classList.remove('ok');
       }, 2000);
-    } catch (_) {
-      // fallback: seleciona o conteúdo do <code>
-      const range = document.createRange();
-      range.selectNodeContents(lostUrl);
-      const sel = window.getSelection();
-      sel.removeAllRanges();
-      sel.addRange(range);
+      toast('Link copiado', 'success');
+    } catch {
+      const r = document.createRange();
+      r.selectNodeContents(lostUrl);
+      const s = window.getSelection();
+      s.removeAllRanges(); s.addRange(r);
     }
   };
-
   lostShareBtn.onclick = () => {
     if (!currentLostUrl) return;
     const text = encodeURIComponent(`🚨 Pet perdido! Última posição em tempo real: ${currentLostUrl}`);
@@ -695,10 +1207,7 @@
     const name = entry ? entry.pet.name : `Pet #${petId}`;
     try {
       const res = await fetch(`/pets/${petId}/lost`, { method: 'POST' });
-      if (!res.ok) {
-        openLostModal(name, '', 'Erro: ' + (await res.text()));
-        return;
-      }
+      if (!res.ok) { openLostModal(name, '', 'Erro: ' + (await res.text())); return; }
       const data = await res.json();
       if (entry) {
         entry.pet.lost = true;
@@ -706,54 +1215,188 @@
         renderPetList();
       }
       openLostModal(name, data.public_url);
+      toast(`${name} marcado como perdido`, 'warn');
     } catch (e) {
       openLostModal(name, '', 'Falha de rede: ' + e.message);
     }
   }
-
   async function clearLost(petId) {
     try {
       const res = await fetch(`/pets/${petId}/lost`, { method: 'DELETE' });
-      if (!res.ok && res.status !== 204) {
-        alert('Erro ao desmarcar perdido: ' + await res.text());
-        return;
-      }
+      if (!res.ok && res.status !== 204) { toast('Erro: ' + await res.text(), 'error'); return; }
       const entry = pets.get(petId);
       if (entry) {
-        entry.pet.lost = false;
-        entry.pet.lost_token = '';
-        renderPetList();
+        entry.pet.lost = false; entry.pet.lost_token = ''; renderPetList();
       }
       closeLostModal();
-    } catch (e) {
-      alert('Falha de rede: ' + e.message);
-    }
+      toast('Pet marcado como encontrado!', 'success');
+    } catch (e) { toast('Falha: ' + e.message, 'error'); }
   }
 
-  async function deleteZone(petId) {
-    const res = await fetch(`/pets/${petId}/zone`, { method: 'DELETE' });
-    if (!res.ok && res.status !== 204) {
-      alert('Erro ao remover zona: ' + await res.text());
-      return;
-    }
+  // ========== Stats ==========
+  const statsOverlay = document.getElementById('stats-overlay');
+  function fmtSeconds(sec) {
+    sec = Math.max(0, Math.floor(sec));
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    if (h > 0) return `${h}h ${m}m`;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
+  }
+  function fmtDistance(m) {
+    if (m < 1000) return `${m.toFixed(0)} m`;
+    return `${(m/1000).toFixed(2)} km`;
+  }
+  async function openStats(petId) {
     const entry = pets.get(petId);
-    if (entry) {
-      entry.pet.safe_zone = null;
-      entry.outside = false;
-      syncZone(entry);
-      renderPetList();
+    if (!entry) return;
+    document.getElementById('stats-title').textContent = `Stats de ${entry.pet.name}`;
+    document.getElementById('stats-summary').textContent = `Cálculo baseado em ${entry.pet.species === 'dog' ? 'movimentos do cão' : entry.pet.species === 'cat' ? 'movimentos do gato' : 'movimentos do pet'} desde o registro.`;
+    document.getElementById('stats-grid').innerHTML = '<div class="stat-tile"><div class="v">…</div><div class="k">carregando</div></div>';
+    statsOverlay.classList.add('open');
+    try {
+      const res = await fetch(`/pets/${petId}/stats`);
+      if (!res.ok) throw new Error(await res.text());
+      const s = await res.json();
+      const grid = document.getElementById('stats-grid');
+      grid.innerHTML = `
+        <div class="stat-tile"><div class="v">${fmtDistance(s.total_distance_meters)}</div><div class="k">distância total</div></div>
+        <div class="stat-tile"><div class="v">${s.steps_recorded}</div><div class="k">posições registradas</div></div>
+        <div class="stat-tile"><div class="v">${fmtSeconds(s.active_seconds)}</div><div class="k">tempo de tracking</div></div>
+        <div class="stat-tile"><div class="v">${(s.avg_speed_mps * 3.6).toFixed(1)} km/h</div><div class="k">velocidade média</div></div>
+        <div class="stat-tile"><div class="v">${s.outside_zone_count}</div><div class="k">posições fora da zona</div></div>
+        <div class="stat-tile"><div class="v">${entry.pet.safe_zone ? '✓' : '—'}</div><div class="k">zona segura</div></div>
+      `;
+    } catch (e) {
+      document.getElementById('stats-grid').innerHTML = '';
+      toast('Erro ao carregar stats: ' + e.message, 'error');
     }
   }
+  document.getElementById('stats-close').onclick = () => statsOverlay.classList.remove('open');
+  document.getElementById('stats-ok').onclick = () => statsOverlay.classList.remove('open');
+  statsOverlay.addEventListener('click', e => { if (e.target === statsOverlay) statsOverlay.classList.remove('open'); });
 
-  // ---------- Alertas ----------
+  // ========== QR ==========
+  const qrOverlay = document.getElementById('qr-overlay');
+  let currentQrUrl = '';
+  async function openQR(petId) {
+    const entry = pets.get(petId);
+    if (!entry) return;
+    document.getElementById('qr-pet-name').textContent = entry.pet.name;
+    document.getElementById('qr-canvas').innerHTML = '<p style="text-align:center;color:#888;">Gerando QR…</p>';
+    document.getElementById('qr-url').textContent = '—';
+    qrOverlay.classList.add('open');
+    try {
+      const res = await fetch(`/pets/${petId}/qr`);
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      currentQrUrl = data.sight_url;
+      document.getElementById('qr-url').textContent = data.sight_url;
+      // generate QR (qrcode-generator)
+      const qr = qrcode(0, 'M');
+      qr.addData(data.sight_url);
+      qr.make();
+      document.getElementById('qr-canvas').innerHTML = qr.createSvgTag({ scalable: true, margin: 0 });
+    } catch (e) {
+      document.getElementById('qr-canvas').innerHTML = '';
+      toast('Erro ao gerar QR: ' + e.message, 'error');
+    }
+  }
+  document.getElementById('qr-close').onclick = () => qrOverlay.classList.remove('open');
+  qrOverlay.addEventListener('click', e => { if (e.target === qrOverlay) qrOverlay.classList.remove('open'); });
+  document.getElementById('qr-copy').onclick = async () => {
+    if (!currentQrUrl) return;
+    try { await navigator.clipboard.writeText(currentQrUrl); toast('Link copiado', 'success'); }
+    catch { toast('Não foi possível copiar', 'error'); }
+  };
+  document.getElementById('qr-print').onclick = () => {
+    const svg = document.getElementById('qr-canvas').innerHTML;
+    const name = document.getElementById('qr-pet-name').textContent;
+    const win = window.open('', '_blank');
+    win.document.write(`
+      <html><head><title>QR ${name}</title>
+      <style>body{font-family:sans-serif;text-align:center;padding:40px;}
+      .qr{display:inline-block;padding:24px;border:2px dashed #2a7763;border-radius:12px;}
+      .qr svg{width:280px;height:280px;}
+      h1{font-size:22px;margin:0 0 12px;}
+      p{color:#555;font-size:13px;}</style></head>
+      <body><h1>${escapeHTML(name)} — Pet Tracker</h1>
+      <div class="qr">${svg}</div>
+      <p>Escaneie para reportar onde viu este pet.</p>
+      <p style="font-family:monospace;font-size:11px;">${escapeHTML(currentQrUrl)}</p>
+      </body></html>
+    `);
+    win.document.close();
+    setTimeout(() => win.print(), 250);
+  };
 
+  // ========== Edit ==========
+  const editOverlay = document.getElementById('edit-overlay');
+  let editingPetId = null;
+  function openEdit(petId) {
+    const entry = pets.get(petId);
+    if (!entry) return;
+    editingPetId = petId;
+    document.getElementById('edit-name').value = entry.pet.name;
+    document.getElementById('edit-species').value = entry.pet.species;
+    document.getElementById('edit-color').value = colorFor(entry.pet);
+    editOverlay.classList.add('open');
+  }
+  document.getElementById('edit-close').onclick = () => editOverlay.classList.remove('open');
+  document.getElementById('edit-cancel').onclick = () => editOverlay.classList.remove('open');
+  editOverlay.addEventListener('click', e => { if (e.target === editOverlay) editOverlay.classList.remove('open'); });
+  document.getElementById('edit-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('edit-name').value.trim();
+    const species = document.getElementById('edit-species').value;
+    const color = document.getElementById('edit-color').value;
+    try {
+      const res = await fetch(`/pets/${editingPetId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, species, color })
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const updated = await res.json();
+      ensurePet(updated);
+      editOverlay.classList.remove('open');
+      toast('Pet atualizado', 'success');
+    } catch (e) { toast('Erro: ' + e.message, 'error'); }
+  });
+
+  // ========== Delete confirm ==========
+  const confirmOverlay = document.getElementById('confirm-overlay');
+  let confirmAction = null;
+  function showConfirm(title, msg, action) {
+    document.getElementById('confirm-title').innerHTML = `<span class="emoji">⚠️</span>${escapeHTML(title)}`;
+    document.getElementById('confirm-msg').textContent = msg;
+    confirmAction = action;
+    confirmOverlay.classList.add('open');
+  }
+  document.getElementById('confirm-close').onclick = () => confirmOverlay.classList.remove('open');
+  document.getElementById('confirm-cancel').onclick = () => confirmOverlay.classList.remove('open');
+  confirmOverlay.addEventListener('click', e => { if (e.target === confirmOverlay) confirmOverlay.classList.remove('open'); });
+  document.getElementById('confirm-ok').onclick = () => {
+    if (confirmAction) confirmAction();
+    confirmOverlay.classList.remove('open');
+  };
+  function confirmDelete(petId, name) {
+    showConfirm('Excluir pet', `Tem certeza que deseja excluir ${name}? Isso remove todo o histórico.`, async () => {
+      try {
+        const res = await fetch(`/pets/${petId}`, { method: 'DELETE' });
+        if (!res.ok && res.status !== 204) throw new Error(await res.text());
+        removePetEntry(petId);
+        toast(`${name} excluído`, 'info');
+      } catch (e) { toast('Erro: ' + e.message, 'error'); }
+    });
+  }
+
+  // ========== Alerts ==========
   function ensureNotificationPermission() {
     if (!('Notification' in window)) return;
-    if (Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
+    if (Notification.permission === 'default') Notification.requestPermission();
   }
-
   let audioCtx = null;
   function beep() {
     try {
@@ -767,50 +1410,108 @@
       osc.start();
       setTimeout(() => { osc.frequency.value = 660; }, 150);
       setTimeout(() => { osc.stop(); }, 350);
-    } catch (e) { /* ignore */ }
+    } catch {}
   }
-
-  function showAlertBanner(petName, position) {
+  function showAlertBanner(petName, petId) {
     const container = document.getElementById('alerts');
     const div = document.createElement('div');
     div.className = 'alert-banner';
-    div.innerHTML = `
-      <span>⚠️ ${escapeHTML(petName)} saiu da zona segura</span>
-      <button class="dismiss">Dispensar</button>
-    `;
+    div.innerHTML = `<span>⚠️ <b>${escapeHTML(petName)}</b> saiu da zona segura</span><button class="dismiss">Dispensar</button>`;
     div.querySelector('.dismiss').onclick = () => div.remove();
     container.appendChild(div);
     setTimeout(() => div.remove(), 15000);
-
     if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification('Pet Tracker', {
-        body: `${petName} saiu da zona segura`,
-        tag: `left-zone-${position.pet_id}`,
-      });
+      new Notification('Pet Tracker', { body: `${petName} saiu da zona segura`, tag: `left-zone-${petId}` });
     }
   }
-
   function handleAlert(msg) {
     if (msg.event === 'left_zone') {
       const entry = pets.get(msg.pet_id);
       const name = entry ? entry.pet.name : `Pet #${msg.pet_id}`;
       beep();
-      showAlertBanner(name, msg.position);
-    }
-    // returned_zone: silencioso, apenas log
-    if (msg.event === 'returned_zone') {
-      console.log(`pet ${msg.pet_id} voltou à zona`);
+      showAlertBanner(name, msg.pet_id);
     }
   }
 
-  // ---------- Carregamento inicial ----------
+  // ========== Sighting markers ==========
+  function addSightingMarker(petId, s) {
+    const entry = pets.get(petId);
+    if (!entry) return;
+    const m = L.marker([s.latitude, s.longitude], {
+      icon: L.divIcon({
+        html: `<div style="font-size:22px;line-height:22px;">👁️</div>`,
+        className: 'sighting-icon', iconSize: [24, 24], iconAnchor: [12, 12]
+      })
+    }).addTo(map).bindTooltip(`Avistamento de ${entry.pet.name}` + (s.note ? `: ${s.note}` : ''), { direction: 'top' });
+    entry.sightingMarkers.push(m);
+    toast(`👁️ Novo avistamento de ${entry.pet.name}`, 'info');
+  }
 
+  // ========== Toasts ==========
+  function toast(message, kind = 'info', timeout = 3500) {
+    const wrap = document.getElementById('toasts');
+    const t = document.createElement('div');
+    t.className = `toast ${kind}`;
+    const icon = { success: '✅', error: '⚠️', warn: '⚠️', info: 'ℹ️' }[kind] || 'ℹ️';
+    t.innerHTML = `<span class="icon">${icon}</span><span class="msg">${escapeHTML(message)}</span><button class="x" aria-label="Fechar">×</button>`;
+    t.querySelector('.x').onclick = () => removeToast(t);
+    wrap.appendChild(t);
+    setTimeout(() => removeToast(t), timeout);
+  }
+  function removeToast(t) {
+    t.classList.add('leaving');
+    setTimeout(() => t.remove(), 250);
+  }
+
+  // ========== SSE ==========
+  let sseSource = null;
+  let sseReconnectTimer = null;
+  function setSSEState(state, text) {
+    const pill = document.getElementById('sse-pill');
+    pill.setAttribute('data-state', state);
+    document.getElementById('sse-text').textContent = text;
+  }
+  function connectSSE() {
+    if (sseSource) sseSource.close();
+    setSSEState('connecting', 'conectando');
+    sseSource = new EventSource('/stream');
+    sseSource.onopen = () => setSSEState('connected', 'ao vivo');
+    sseSource.onmessage = (event) => {
+      let msg; try { msg = JSON.parse(event.data); } catch { return; }
+      if (msg.type === 'position' && msg.position) applyPosition(msg.position);
+      else if (msg.type === 'alert') { handleAlert(msg); if (msg.position) applyPosition(msg.position); }
+      else if (msg.type === 'lost_status' && msg.pet) {
+        const entry = pets.get(msg.pet.id);
+        if (entry) {
+          entry.pet.lost = msg.pet.lost;
+          entry.pet.lost_token = msg.pet.lost_token || '';
+          renderPetList();
+        }
+      } else if (msg.type === 'sighting' && msg.sighting) {
+        addSightingMarker(msg.pet_id, msg.sighting);
+      } else if (msg.type === 'pet_created' && msg.pet) {
+        ensurePet(msg.pet);
+        toast(`Novo pet: ${msg.pet.name}`, 'info');
+      } else if (msg.type === 'pet_removed') {
+        removePetEntry(msg.pet_id);
+      } else if (msg.type === 'pet_updated' && msg.pet) {
+        ensurePet(msg.pet);
+      }
+    };
+    sseSource.onerror = () => {
+      setSSEState('reconnecting', 'reconectando');
+      sseSource.close();
+      clearTimeout(sseReconnectTimer);
+      sseReconnectTimer = setTimeout(connectSSE, 2500);
+    };
+  }
+
+  // ========== Initial load ==========
   async function loadPets() {
     const res = await fetch('/pets');
     const list = await res.json();
     list.forEach(ensurePet);
   }
-
   async function loadHistory() {
     const res = await fetch('/history');
     const byPet = await res.json();
@@ -826,88 +1527,71 @@
     renderPetList();
   }
 
-  function connectSSE() {
-    const source = new EventSource('/stream');
-    source.onmessage = (event) => {
-      const msg = JSON.parse(event.data);
-      if (msg.type === 'position' && msg.position) {
-        applyPosition(msg.position);
-      } else if (msg.type === 'alert') {
-        handleAlert(msg);
-        if (msg.position) applyPosition(msg.position);
-      } else if (msg.type === 'lost_status' && msg.pet) {
-        const entry = pets.get(msg.pet.id);
-        if (entry) {
-          entry.pet.lost = msg.pet.lost;
-          entry.pet.lost_token = msg.pet.lost_token || '';
-          renderPetList();
-        }
-      }
-    };
-    source.onerror = (err) => console.error('SSE error:', err);
-  }
-
+  // ========== Form: new pet ==========
   document.getElementById('new-pet').addEventListener('submit', async (e) => {
     e.preventDefault();
     const name = document.getElementById('pet-name').value.trim();
     const species = document.getElementById('pet-species').value;
+    const color = document.getElementById('pet-color').value;
     if (!name) return;
-    const res = await fetch('/pets', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, species })
-    });
-    if (!res.ok) {
-      alert('Erro ao criar pet: ' + await res.text());
-      return;
-    }
-    const pet = await res.json();
-    ensurePet(pet);
-    document.getElementById('pet-name').value = '';
+    try {
+      const res = await fetch('/pets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, species, color })
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const pet = await res.json();
+      ensurePet(pet);
+      document.getElementById('pet-name').value = '';
+      toast(`${pet.name} cadastrado!`, 'success');
+    } catch (err) { toast('Erro: ' + err.message, 'error'); }
   });
 
-  // pede permissão de notificação no primeiro clique do usuário
-  document.body.addEventListener('click', ensureNotificationPermission, { once: true });
+  // ========== Search ==========
+  document.getElementById('pet-search').addEventListener('input', (e) => {
+    searchQuery = e.target.value.trim().toLowerCase();
+    renderPetList();
+  });
 
-  // ---------- Modal de ajuda ----------
+  // ========== Sidebar toggle (mobile) ==========
+  const sidebar = document.getElementById('sidebar');
+  const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+  function openSidebar() { sidebar.classList.add('open'); sidebarBackdrop.classList.add('open'); }
+  function closeSidebar() { sidebar.classList.remove('open'); sidebarBackdrop.classList.remove('open'); }
+  document.getElementById('sidebar-toggle').onclick = () => sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+  sidebarBackdrop.onclick = closeSidebar;
+
+  // ========== Help / tutorial ==========
   const helpOverlay = document.getElementById('help-overlay');
   const helpBtn = document.getElementById('help-btn');
-  const HELP_SEEN_KEY = 'pet-tracker:help-seen';
-
-  if (localStorage.getItem(HELP_SEEN_KEY) === '1') {
-    helpBtn.classList.remove('pulsing');
-  }
-
   const helpSlides = [...document.querySelectorAll('.help-slide')];
   const helpPrevBtn = document.getElementById('help-prev');
   const helpNextBtn = document.getElementById('help-next');
   const helpDots = document.getElementById('help-dots');
   let helpIndex = 0;
 
-  // construir dots
+  if (localStorage.getItem(HELP_SEEN_KEY) === '1') helpBtn.classList.remove('pulsing');
+
   helpSlides.forEach((_, i) => {
     const dot = document.createElement('div');
     dot.className = 'dot' + (i === 0 ? ' active' : '');
     dot.onclick = () => goToSlide(i);
     helpDots.appendChild(dot);
   });
-
   function renderHelpNav() {
     helpSlides.forEach((s, i) => s.classList.toggle('active', i === helpIndex));
     [...helpDots.children].forEach((d, i) => d.classList.toggle('active', i === helpIndex));
     helpPrevBtn.disabled = helpIndex === 0;
     const isLast = helpIndex === helpSlides.length - 1;
-    helpNextBtn.textContent = isLast ? 'Começar 🚀' : 'Próximo →';
+    helpNextBtn.textContent = isLast ? 'Vamos lá! 🚀' : 'Próximo →';
   }
   function goToSlide(i) {
     helpIndex = Math.max(0, Math.min(helpSlides.length - 1, i));
     renderHelpNav();
   }
   helpPrevBtn.onclick = () => goToSlide(helpIndex - 1);
-  helpNextBtn.onclick = () => {
-    if (helpIndex === helpSlides.length - 1) closeHelp();
-    else goToSlide(helpIndex + 1);
-  };
+  helpNextBtn.onclick = () => helpIndex === helpSlides.length - 1 ? closeHelp() : goToSlide(helpIndex + 1);
 
   function openHelp() {
     helpOverlay.classList.add('open');
@@ -918,18 +1602,37 @@
   function closeHelp() { helpOverlay.classList.remove('open'); }
   helpBtn.onclick = openHelp;
   document.getElementById('help-close').onclick = closeHelp;
-  helpOverlay.addEventListener('click', (e) => { if (e.target === helpOverlay) closeHelp(); });
+  helpOverlay.addEventListener('click', e => { if (e.target === helpOverlay) closeHelp(); });
+
+  // ========== Keyboard shortcuts ==========
   document.addEventListener('keydown', (e) => {
-    if (!helpOverlay.classList.contains('open')) return;
-    if (e.key === 'Escape') closeHelp();
-    if (e.key === 'ArrowRight') goToSlide(helpIndex + 1);
-    if (e.key === 'ArrowLeft') goToSlide(helpIndex - 1);
+    // close modals on Escape
+    if (e.key === 'Escape') {
+      [helpOverlay, lostOverlay, statsOverlay, qrOverlay, editOverlay, confirmOverlay].forEach(m => m.classList.remove('open'));
+      cancelZoneDrawing();
+    }
+    if (helpOverlay.classList.contains('open')) {
+      if (e.key === 'ArrowRight') goToSlide(helpIndex + 1);
+      if (e.key === 'ArrowLeft') goToSlide(helpIndex - 1);
+    }
+    // shortcuts when not in input
+    const tag = document.activeElement && document.activeElement.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    if (e.key === '?' || (e.key === '/' && e.shiftKey)) { e.preventDefault(); openHelp(); }
+    if (e.key === '/' && !e.shiftKey) { e.preventDefault(); document.getElementById('pet-search').focus(); }
+    if (e.key === 't') { e.preventDefault(); document.getElementById('theme-toggle').click(); }
   });
 
+  // Pede permissão de notificação no 1º clique
+  document.body.addEventListener('click', ensureNotificationPermission, { once: true });
+
+  // ========== Boot ==========
   (async () => {
     await loadPets();
     await loadHistory();
     connectSSE();
+    // tutorial sempre abre ao entrar / recarregar
+    setTimeout(openHelp, 400);
   })();
 </script>
 

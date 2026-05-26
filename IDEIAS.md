@@ -13,14 +13,17 @@ não apenas a feature técnica.
 - **Modo "perdido".** ✅ Implementado. Um botão coloca o pet em estado "perdido"
   e gera um link público (somente leitura) com a última localização e o rastro
   recente. Dono cola o link em grupos do bairro no WhatsApp.
+- **Mural público de perdidos.** ✅ Implementado. Página `/mural` lista todos
+  os pets em modo perdido com mapa agregado — útil pra rede do bairro.
 - **Última atualização visível.** "Offline desde 14:32" — o dono distingue
   problema do dispositivo de problema do pet.
 - **Aviso de bateria fraca.** E-mail / push quando o coleira cai abaixo de 20%.
 
 ## 2. Atividade e saúde — "Fitbit para pets"
 
-- **Distância diária / passos / minutos ativos**, com gráfico semanal.
-  Veterinários perguntam isso — agora o app responde.
+- **Distância diária / passos / minutos ativos.** ✅ Implementado. Modal de
+  Stats por pet (`/pets/{id}/stats`) mostra distância total, passos
+  registrados, velocidade média e tempo de tracking.
 - **Heatmap dos lugares favoritos.** Onde o gato dorme? Onde o cachorro
   costuma fazer xixi nos passeios? (Divertido + insight.)
 - **Detecção automática de passeio.** Movimento sustentado longe de casa vira
@@ -35,12 +38,13 @@ não apenas a feature técnica.
 
 ## 4. Comunidade / efeito de rede
 
-- **Mural de pets perdidos.** Feed público de pets em modo "perdido" na sua
-  cidade, com pin da última localização. Quem avistar pode reportar.
-- **Reportes via QR code (sighting reports).** Estranho que encontra o pet
-  escaneia o QR da coleira → abre página que envia anonimamente a
-  localização atual ao dono. **Diferencial enorme:** dispensa GPS no
-  dispositivo. O QR é o dispositivo.
+- **Mural de pets perdidos.** ✅ Implementado. Página `/mural` agrega todos os
+  pets em modo perdido em um mapa + lista lateral; atualiza a cada 8s.
+- **Reportes via QR code (sighting reports).** ✅ Implementado. Cada pet tem um
+  `sight_token` único; modal de QR imprime cartão pra coleira; quem escaneia
+  abre `/sight/{token}` e reporta a localização (com nota opcional) — sem
+  precisar do contato do dono. Sightings aparecem como pins 👁️ no painel do
+  dono e na página pública de perdido.
 
 ## 5. Integrações com cuidado veterinário
 
@@ -72,25 +76,23 @@ não apenas a feature técnica.
 
 ---
 
-## Plano sugerido até final de maio (MVP demonstrável)
+## Plano de entrega (MVP demonstrável)
 
-Considerando ~4 semanas com 50% das aulas dedicadas, em ordem de prioridade:
-
-1. **Multi-pet** ✅ (pronto)
-2. **Geofence + alerta no navegador** ✅ (pronto)
-3. **Modo perdido + link público** ✅ — vende o demo, ~1 sessão
-4. **Página "celular sender"** (`navigator.geolocation` → POST /position) —
-   transforma simulação em rastreamento real, ~1 sessão
-5. **Persistência em SQLite** — sobrevive a restart, aparência profissional,
-   ~1 sessão
-6. **Contas de dono (cookie de sessão simples)** — habilita a #7
-7. **Reportes por QR code (sighting)** — feature "uau" para a apresentação
+1. **Multi-pet** ✅
+2. **Geofence + alerta no navegador** ✅
+3. **Modo perdido + link público** ✅
+4. **Página "celular sender"** ✅ — `navigator.geolocation.watchPosition` → `POST /position`
+5. **Persistência em disco** ✅ — JSON em `store.json` (sem dependência externa)
+6. **Reportes por QR code (sighting)** ✅ — feature "uau" da apresentação
+7. **Mural público + Stats + Dark mode + Mobile responsivo** ✅
+8. **Contas de dono (cookie/sessão)** ⏳ — pendente, habilita variantes multi-família e walker
 
 História do produto para a apresentação:
 
 > *Pet Tracker é um serviço que ajuda donos a encontrar pets perdidos por
 > meio de rastreamento GPS, alertas de zona segura e uma rede comunitária
-> de avistamentos.*
+> de avistamentos via QR code — funciona com coleira GPS, com um celular
+> antigo amarrado na coleira, ou apenas com um QR code impresso.*
 
 ---
 

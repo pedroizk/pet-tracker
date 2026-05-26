@@ -1,5 +1,11 @@
 server.exe
 *.exe
+pet-tracker
+pet-tracker-server
+
+# Estado persistido em runtime
+store.json
+store.json.tmp
 
 # Documentação e arquivos relacionados ao Claude
 docs/
