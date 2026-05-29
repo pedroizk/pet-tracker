@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Pet Tracker — Caso de Estudo</title>
+<style>
+  @page { size: A4; margin: 22mm 18mm; }
+
+  :root {
+    --green: #2a7;
+    --green-dark: #1f6e54;
+    --green-soft: #e8f5ee;
+    --ink: #222;
+    --muted: #666;
+    --border: #d8d8d8;
+    --warn: #c0392b;
+    --warn-soft: #fde0e0;
+    --ok: #207244;
+    --ok-soft: #d6f5e3;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    margin: 0; padding: 0;
+    font-family: "Segoe UI", "Helvetica Neue", system-ui, -apple-system, sans-serif;
+    color: var(--ink);
+    line-height: 1.55;
+    font-size: 11.5pt;
+  }
+
+  h1, h2, h3 { color: var(--green-dark); margin: 0; }
+  h1 { font-size: 24pt; line-height: 1.15; font-weight: 700; }
+  h2 { font-size: 15pt; margin-top: 18pt; margin-bottom: 6pt; padding-bottom: 4pt; border-bottom: 2px solid var(--green); }
+  h3 { font-size: 12pt; margin-top: 12pt; margin-bottom: 4pt; color: var(--ink); }
+
+  p { margin: 6pt 0; text-align: justify; }
+  ul, ol { margin: 4pt 0 6pt 0; padding-left: 20pt; }
+  li { margin: 2pt 0; }
+  strong { color: var(--green-dark); }
+  code { font-family: "Fira Code", "Consolas", monospace; font-size: 0.85em; background: #f4f4f4; padding: 1px 4px; border-radius: 3px; }
+
+  /* Capa */
+  .cover {
+    page-break-after: always;
+    height: calc(297mm - 44mm);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 0 12mm;
+  }
+  .cover .logo {
+    font-size: 64pt;
+    line-height: 1;
+    margin-bottom: 10mm;
+  }
+  .cover h1 {
+    font-size: 32pt;
+    color: var(--green-dark);
+    margin-bottom: 6pt;
+  }
+  .cover .subtitle {
+    font-size: 14pt;
+    color: var(--muted);
+    margin-bottom: 24mm;
+    max-width: 140mm;
+  }
+  .cover .meta {
+    font-size: 11pt;
+    color: var(--ink);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 10pt 0;
+    width: 100mm;
+  }
+  .cover .meta div { margin: 4pt 0; }
+  .cover .meta .label { color: var(--muted); font-size: 9pt; text-transform: uppercase; letter-spacing: 0.6px; }
+  .cover .footer-mark {
+    margin-top: auto;
+    font-size: 9pt;
+    color: var(--muted);
+  }
+
+  /* Cards e callouts */
+  .callout {
+    background: var(--green-soft);
+    border-left: 4px solid var(--green);
+    padding: 10pt 14pt;
+    margin: 10pt 0;
+    border-radius: 4px;
+  }
+  .callout.warn {
+    background: var(--warn-soft);
+    border-left-color: var(--warn);
+  }
+  .callout strong { color: var(--green-dark); }
+  .callout.warn strong { color: var(--warn); }
+
+  /* Tabela do cronograma */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8pt 0;
+    font-size: 10.5pt;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 6pt 8pt;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: var(--green);
+    color: white;
+    font-weight: 600;
+  }
+  tbody tr:nth-child(even) { background: #fafafa; }
+  td.status-done   { color: var(--ok); font-weight: 600; }
+  td.status-doc    { color: var(--green-dark); font-weight: 600; }
+  td.status-future { color: var(--muted); }
+
+  /* Lista de status */
+  .status-list { list-style: none; padding: 0; }
+  .status-list li {
+    padding: 6pt 10pt;
+    margin: 4pt 0;
+    background: #f7f8fa;
+    border-radius: 4px;
+    border-left: 3px solid var(--border);
+  }
+  .status-list li.done    { border-left-color: var(--ok);    background: var(--ok-soft); }
+  .status-list li.doc     { border-left-color: var(--green); background: var(--green-soft); }
+  .status-list li .tag    { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 9pt; font-weight: 700; margin-right: 8pt; }
+  .status-list li.done .tag    { background: var(--ok);    color: white; }
+  .status-list li.doc .tag     { background: var(--green); color: white; }
+  .status-list li.future .tag  { background: #ccc; color: white; }
+
+  /* Page break helpers */
+  .page-break { page-break-before: always; }
+  h2 { page-break-after: avoid; }
+  table, .callout { page-break-inside: avoid; }
+</style>
+</head>
+<body>
+
+<!-- ===================== CAPA ===================== -->
+<section class="cover">
+  <div class="logo">🐾</div>
+  <h1>Pet Tracker</h1>
+  <p class="subtitle">Caso de estudo: especificação de uma aplicação real para o problema do Rei Julian</p>
+
+  <div class="meta">
+    <div><span class="label">Autor</span><br>Pedro Izkovitz</div>
+    <div><span class="label">Data</span><br>27 de abril de 2026</div>
+    <div><span class="label">Entrega prevista</span><br>31 de maio de 2026</div>
+    <div><span class="label">Repositório</span><br><a href="https://github.com/pedroizk/pet-tracker" style="color: var(--green-dark); text-decoration: none;">github.com/pedroizk/pet-tracker</a></div>
+  </div>
+
+  <div class="footer-mark">
+    Disciplina · Projeto integrado · ~4 semanas, 50% das aulas dedicadas
+  </div>
+</section>
+
+<!-- ===================== CONTEÚDO ===================== -->
+
+<h2>1. Resumo</h2>
+<p>
+  <strong>Pet Tracker</strong> é uma aplicação web que rastreia pets em tempo real e alerta o dono quando o animal
+  sai de uma <em>zona segura</em>. Combina <strong>geofencing</strong> preventivo, <strong>link público</strong>
+  do tipo "pet perdido" para mobilizar a vizinhança, e <strong>reportes via QR code</strong> que dispensam
+  hardware GPS no animal — três mecanismos complementares para reduzir o tempo entre o desaparecimento e o
+  reencontro.
+</p>
+
+<h2>2. O problema (caso Rei Julian)</h2>
+<p>
+  Rei Julian é um cachorro da família Izkovitz em Pelotas/RS. Em uma manhã de domingo, foge pelo portão deixado
+  entreaberto. Sem coleira eletrônica nem identificação, a família tem poucas horas para encontrá-lo antes que
+  ele se afaste do raio de busca, seja atropelado ou recolhido por terceiros.
+</p>
+<ul>
+  <li>Brasil tem ~58 mi de cães e ~28 mi de gatos domiciliados (ABINPET, 2024).</li>
+  <li>1 em cada 3 pets se perderá pelo menos uma vez — apenas ~22% retornam ao dono no Brasil.</li>
+  <li>Soluções atuais não escalam: coleira GPS custa R$ 200–600 + mensalidade; microchip não rastreia.</li>
+</ul>
+
+<h2>3. A aplicação proposta</h2>
+<p>
+  Aplicação web sem instalação, com <strong>backend Go</strong> (HTTP nativo + SSE) e <strong>frontend vanilla</strong>
+  com mapa Leaflet sobre OpenStreetMap. O dono cadastra o pet, desenha uma zona segura no mapa e recebe alerta
+  (banner + beep + Web Notification) quando o pet sai dela. Quando o pet some de fato, o modo "perdido" gera um
+  link público <code>/lost/{token}</code> que pode ser colado em grupos de WhatsApp.
+</p>
+<div class="callout">
+  <strong>Diferencial planejado — sightings via QR code:</strong> qualquer estranho que encontre o pet escaneia o QR
+  da coleira → abre página pública → envia anonimamente a posição GPS dele ao dono. <em>O QR é o dispositivo de
+  rastreamento.</em> Custo aproximado: R$ 5 contra R$ 200+ de coleira GPS.
+</div>
+
+<h2>4. Importância</h2>
+<ul>
+  <li><strong>Social:</strong> cada hora a menos no reencontro reduz drasticamente o risco de o animal ser atropelado
+      ou se afastar para fora do raio de busca.</li>
+  <li><strong>Econômico:</strong> custo zero para o usuário no MVP; modelo freemium escalável (R$ 10/mês para pets
+      ilimitados); variantes B2B (abrigos, ONGs) sem mudar o core.</li>
+  <li><strong>Acadêmico:</strong> exercita REST, SSE, geofencing (haversine), concorrência em Go, persistência
+      embarcada, autenticação por sessão e tokens públicos com escopo restrito.</li>
+</ul>
+
+<h2>5. Viabilidade técnica</h2>
+<p>
+  Stack leve: backend Go usando apenas a stdlib (<code>net/http</code>, <code>sync</code>); frontend vanilla com
+  Leaflet (12 KB) sobre OpenStreetMap (gratuito); persistência futura via <code>modernc.org/sqlite</code> (puro
+  Go, sem CGO). Sem cloud, sem API paga, sem hardware obrigatório. O MVP atual tem ~700 linhas de Go e ~900 de
+  HTML/CSS/JS, e cada feature pendente está isoladamente documentada em <code>docs/</code>, com escopo de
+  ~1 a ~2 sessões.
+</p>
+
+<h2>6. Cronograma até final de maio</h2>
+<p>
+  Premissa: 4 a 5 semanas até 31/05, com 50% das aulas dedicadas (≈ 1,5 h de foco por sessão).
+</p>
+<table>
+  <thead>
+    <tr><th style="width:14%">Semana</th><th style="width:48%">Entrega</th><th style="width:14%">Esforço</th><th>Status</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>0</td>
+      <td>Multi-pet, geofence, alertas, modal de ajuda</td>
+      <td>~3 sessões</td>
+      <td class="status-done">✅ Concluído</td>
+    </tr>
+    <tr>
+      <td>1 (atual)</td>
+      <td>Modo perdido + link público read-only</td>
+      <td>~1 sessão</td>
+      <td class="status-done">✅ Concluído</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>Persistência SQLite (sobrevive a restart)</td>
+      <td>~1,5 sessão</td>
+      <td class="status-doc">📄 Documentado</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>Contas de dono (cookie de sessão simples)</td>
+      <td>~2 sessões</td>
+      <td class="status-doc">📄 Documentado</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>Reportes via QR code (sighting reports)</td>
+      <td>~2 sessões</td>
+      <td class="status-doc">📄 Documentado</td>
+    </tr>
+  </tbody>
+</table>
+<p>
+  <strong>Plano de corte:</strong> contas (s. 3) e sightings (s. 4) podem ser cortadas sem comprometer a história
+  central — o MVP já roda standalone com persistência.
+</p>
+
+<h2>7. Conclusão</h2>
+<p>
+  O projeto é <strong>viável</strong> dentro do prazo, <strong>importante</strong> pelo problema real que ataca, e
+  <strong>diferenciado</strong> pelos mecanismos de baixíssimo custo (link público + QR sightings) que dispensam o
+  hardware proprietário caro do mercado atual. O status presente já valida a hipótese central: <em>geofencing em
+  tempo real funciona em browser, sem hardware proprietário</em>.
+</p>
+
+<div class="callout">
+  <strong>Repositório:</strong>
+  <a href="https://github.com/pedroizk/pet-tracker" style="color: var(--green-dark); text-decoration: none; font-family: 'Fira Code', 'Consolas', monospace;">
+    https://github.com/pedroizk/pet-tracker
+  </a>
+</div>
+
+</body>
+</html>

@@ -7,8 +7,7 @@ pet-tracker-server
 store.json
 store.json.tmp
 
-# Documentação e arquivos relacionados ao Claude
-docs/
+# Arquivos relacionados ao Claude
 CLAUDE.md
 .claude/
 
