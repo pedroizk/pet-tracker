@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Pet Tracker — Relatório de Desenvolvimento</title>
+<style>
+  @page { size: A4; margin: 22mm 18mm; }
+
+  :root {
+    --green: #2a7;
+    --green-dark: #1f6e54;
+    --green-soft: #e8f5ee;
+    --ink: #222;
+    --muted: #666;
+    --border: #d8d8d8;
+    --warn: #c0392b;
+    --warn-soft: #fde0e0;
+    --ok: #207244;
+    --ok-soft: #d6f5e3;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    margin: 0; padding: 0;
+    font-family: "Segoe UI", "Helvetica Neue", system-ui, -apple-system, sans-serif;
+    color: var(--ink);
+    line-height: 1.55;
+    font-size: 11.5pt;
+  }
+
+  h1, h2, h3 { color: var(--green-dark); margin: 0; }
+  h1 { font-size: 24pt; line-height: 1.15; font-weight: 700; }
+  h2 { font-size: 15pt; margin-top: 18pt; margin-bottom: 6pt; padding-bottom: 4pt; border-bottom: 2px solid var(--green); }
+  h3 { font-size: 12pt; margin-top: 12pt; margin-bottom: 4pt; color: var(--ink); }
+
+  p { margin: 6pt 0; text-align: justify; }
+  ul, ol { margin: 4pt 0 6pt 0; padding-left: 20pt; }
+  li { margin: 2pt 0; }
+  strong { color: var(--green-dark); }
+  code { font-family: "Fira Code", "Consolas", monospace; font-size: 0.85em; background: #f4f4f4; padding: 1px 4px; border-radius: 3px; }
+
+  /* Capa */
+  .cover {
+    page-break-after: always;
+    height: calc(297mm - 44mm);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 0 12mm;
+  }
+  .cover .logo { font-size: 64pt; line-height: 1; margin-bottom: 10mm; }
+  .cover h1 { font-size: 32pt; color: var(--green-dark); margin-bottom: 6pt; }
+  .cover .subtitle { font-size: 14pt; color: var(--muted); margin-bottom: 24mm; max-width: 140mm; }
+  .cover .meta {
+    font-size: 11pt; color: var(--ink);
+    border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    padding: 10pt 0; width: 100mm;
+  }
+  .cover .meta div { margin: 4pt 0; }
+  .cover .meta .label { color: var(--muted); font-size: 9pt; text-transform: uppercase; letter-spacing: 0.6px; }
+  .cover .footer-mark { margin-top: auto; font-size: 9pt; color: var(--muted); }
+
+  /* Callouts */
+  .callout {
+    background: var(--green-soft); border-left: 4px solid var(--green);
+    padding: 10pt 14pt; margin: 10pt 0; border-radius: 4px;
+  }
+  .callout.warn { background: var(--warn-soft); border-left-color: var(--warn); }
+  .callout strong { color: var(--green-dark); }
+  .callout.warn strong { color: var(--warn); }
+
+  /* Tabelas */
+  table { width: 100%; border-collapse: collapse; margin: 8pt 0; font-size: 10.5pt; }
+  th, td { border: 1px solid var(--border); padding: 6pt 8pt; text-align: left; vertical-align: top; }
+  th { background: var(--green); color: white; font-weight: 600; }
+  tbody tr:nth-child(even) { background: #fafafa; }
+  td.status-done   { color: var(--ok); font-weight: 600; white-space: nowrap; }
+  td.status-future { color: var(--muted); white-space: nowrap; }
+  code.route { background: #f4f4f4; white-space: nowrap; }
+
+  /* Page break helpers */
+  .page-break { page-break-before: always; }
+  h2 { page-break-after: avoid; }
+  table, .callout { page-break-inside: avoid; }
+</style>
+</head>
+<body>
+
+<!-- ===================== CAPA ===================== -->
+<section class="cover">
+  <div class="logo">🐾</div>
+  <h1>Pet Tracker</h1>
+  <p class="subtitle">Relatório de desenvolvimento do projeto concluído</p>
+
+  <div class="meta">
+    <div><span class="label">Autor</span><br>Pedro Izkovitz</div>
+    <div><span class="label">Data</span><br>29 de maio de 2026</div>
+    <div><span class="label">Status</span><br>MVP concluído e funcional</div>
+    <div><span class="label">Repositório</span><br><a href="https://github.com/pedroizk/pet-tracker" style="color: var(--green-dark); text-decoration: none;">github.com/pedroizk/pet-tracker</a></div>
+  </div>
+
+  <div class="footer-mark">
+    Disciplina · Projeto integrado · Relatório final
+  </div>
+</section>
+
+<!-- ===================== CONTEÚDO ===================== -->
+
+<h2>1. Visão geral</h2>
+<p>
+  O <strong>Pet Tracker</strong> é uma aplicação web, concluída e funcional, que rastreia pets em tempo real e
+  alerta o dono quando o animal sai de uma <em>zona segura</em>. O projeto partiu de um caso de estudo
+  (o cachorro "Rei Julian", que foge de casa) e foi desenvolvido até um MVP completo que combina três mecanismos
+  complementares de reencontro: <strong>geofencing</strong> preventivo, <strong>link público de pet perdido</strong>
+  para mobilizar a vizinhança, e <strong>reportes via QR code</strong> que dispensam hardware GPS no animal.
+</p>
+<p>
+  Este relatório descreve o que foi efetivamente construído: a arquitetura final, as funcionalidades
+  implementadas, a API HTTP, as principais decisões técnicas e o resultado obtido. A especificação inicial do
+  projeto está no documento <code>caso-estudo.pdf</code>, no mesmo repositório.
+</p>
+
+<h2>2. Arquitetura</h2>
+<p>
+  A aplicação roda como um único binário Go, sem instalação de dependências e sem serviços externos. O backend
+  serve tanto a API quanto as páginas estáticas; o frontend é HTML/CSS/JS puro (vanilla) com mapa Leaflet sobre
+  OpenStreetMap.
+</p>
+<ul>
+  <li><strong>Backend (Go, ~1.380 linhas):</strong> apenas a biblioteca padrão (<code>net/http</code>,
+      <code>sync</code>, <code>encoding/json</code>) — o <code>go.mod</code> não tem nenhuma dependência externa.
+      A concorrência é controlada por <code>sync.RWMutex</code> e <code>sync/atomic</code>.</li>
+  <li><strong>Tempo real:</strong> <strong>Server-Sent Events</strong> (<code>/stream</code>). Cada cliente
+      recebe um canal próprio; o servidor faz <em>broadcast</em> de eventos (nova posição, pet criado/editado/
+      removido, alerta de zona) para todos os conectados. O frontend reconecta sozinho e mantém heartbeat de 15s.</li>
+  <li><strong>Frontend (~2.700 linhas de HTML/CSS/JS):</strong> 5 páginas — painel do dono, página pública de pet
+      perdido, formulário de avistamento por QR, "celular como tracker" e mural público. Inclui dark mode com
+      design tokens, layout responsivo, toasts e atalhos de teclado.</li>
+  <li><strong>Persistência:</strong> snapshot completo do estado em <code>store.json</code>, com auto-save
+      disparado por flag <em>dirty</em> e gravação atômica (arquivo temporário + <code>rename</code>). O estado é
+      recarregado no startup, então pets, zonas, históricos e tokens públicos sobrevivem a um restart.</li>
+</ul>
+
+<h2>3. Funcionalidades implementadas</h2>
+<table>
+  <thead>
+    <tr><th style="width:34%">Funcionalidade</th><th>Descrição</th><th style="width:16%">Status</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Multi-pet</td><td>Cadastro de vários pets (cão, gato, coelho, pássaro, outro), com cor customizável e edição/exclusão.</td><td class="status-done">✅ Concluído</td></tr>
+    <tr><td>Geofence + alertas</td><td>Zona segura circular desenhada no mapa; alerta (banner + beep + Web Notification) quando o pet sai dela.</td><td class="status-done">✅ Concluído</td></tr>
+    <tr><td>Modo perdido + link público</td><td>Gera token de 128 bits e abre <code class="route">/lost/{token}</code> com mapa em tempo real, colável no WhatsApp.</td><td class="status-done">✅ Concluído</td></tr>
+    <tr><td>Reportes via QR code</td><td>Cada pet tem um QR; estranhos reportam a posição anonimamente em <code class="route">/sight/{token}</code>, sem hardware.</td><td class="status-done">✅ Concluído</td></tr>
+    <tr><td>Celular como tracker</td><td><code class="route">/sender</code> usa o GPS do navegador (<code>watchPosition</code>) com wake-lock e intervalo configurável.</td><td class="status-done">✅ Concluído</td></tr>
+    <tr><td>Mural público</td><td><code class="route">/mural</code> lista os pets atualmente perdidos para a comunidade.</td><td class="status-done">✅ Concluído</td></tr>
+    <tr><td>Estatísticas por pet</td><td>Distância total, tempo ativo e velocidade média, calculadas sobre o histórico.</td><td class="status-done">✅ Concluído</td></tr>
+    <tr><td>Persistência em disco</td><td>Estado salvo em <code>store.json</code> com auto-save; sobrevive a restart.</td><td class="status-done">✅ Concluído</td></tr>
+    <tr><td>UI / UX</td><td>Dark mode, sidebar responsivo, toasts, status do SSE, tutorial e atalhos de teclado.</td><td class="status-done">✅ Concluído</td></tr>
+    <tr><td>Contas de dono (auth)</td><td>Autenticação por sessão — especificada e documentada, deixada como evolução futura.</td><td class="status-future">○ Futuro</td></tr>
+  </tbody>
+</table>
+
+<h2>4. API HTTP</h2>
+<p>Principais endpoints expostos pelo backend (todos JSON, exceto as páginas HTML e o stream):</p>
+<table>
+  <thead>
+    <tr><th style="width:42%">Rota</th><th>Função</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code class="route">GET/POST /pets</code></td><td>Lista e cria pets; <code class="route">PATCH/DELETE /pets/{id}</code> edita e remove.</td></tr>
+    <tr><td><code class="route">PUT/DELETE /pets/{id}/zone</code></td><td>Define e remove a zona segura.</td></tr>
+    <tr><td><code class="route">POST/DELETE /pets/{id}/lost</code></td><td>Marca como perdido (gera token público) e como encontrado.</td></tr>
+    <tr><td><code class="route">GET /pets/{id}/stats</code></td><td>Estatísticas de movimento do pet.</td></tr>
+    <tr><td><code class="route">GET/POST /position</code></td><td>Lê a posição atual de todos os pets e ingere novas posições.</td></tr>
+    <tr><td><code class="route">GET /history</code></td><td>Histórico de pontos de um pet (até 1000).</td></tr>
+    <tr><td><code class="route">GET /stream</code></td><td>Server-Sent Events em tempo real.</td></tr>
+    <tr><td><code class="route">GET /lost/{token}/state</code></td><td>Estado JSON do pet perdido, consumido pelo mapa público.</td></tr>
+    <tr><td><code class="route">POST /sight/{token}</code></td><td>Recebe um avistamento anônimo via QR (posição + nota).</td></tr>
+    <tr><td><code class="route">GET /api/mural</code> · <code class="route">/healthz</code></td><td>Lista pública de perdidos e health check.</td></tr>
+  </tbody>
+</table>
+
+<h2>5. Decisões técnicas</h2>
+<ul>
+  <li><strong>Só biblioteca padrão do Go:</strong> mantém o projeto sem build complexo — basta <code>go run .</code>.
+      Reforça os fundamentos de HTTP, JSON e concorrência sem esconder atrás de um framework.</li>
+  <li><strong>SSE em vez de polling/WebSocket:</strong> o fluxo é majoritariamente servidor → cliente (posições e
+      alertas), então SSE entrega tempo real com reconexão nativa e muito menos código que WebSocket.</li>
+  <li><strong>JSON em disco em vez de SQLite:</strong> a especificação previa SQLite, mas o volume de dados é
+      pequeno e cabe inteiro em memória. Um snapshot JSON com gravação atômica resolve a persistência sem
+      dependência externa nem CGO, simplificando a entrega — uma simplificação consciente sobre o plano inicial.</li>
+  <li><strong>Geofencing com fórmula de Haversine:</strong> distância entre coordenadas calculada no servidor
+      (raio da Terra = 6.371&nbsp;km) para decidir se o pet está dentro ou fora da zona segura.</li>
+  <li><strong>QR code como "dispositivo de rastreamento":</strong> o diferencial do projeto. Tokens públicos com
+      escopo restrito permitem que terceiros reportem a posição sem hardware GPS no animal (~R$ 5 contra R$ 200+
+      de uma coleira GPS).</li>
+</ul>
+
+<h2>6. Resultado e conclusão</h2>
+<p>
+  O MVP foi <strong>concluído e está funcional</strong>: compila sem erros, passa no <code>go vet</code> e roda com
+  um único comando. A hipótese central do caso de estudo foi validada — <em>geofencing em tempo real funciona
+  inteiramente no navegador, sem hardware proprietário</em> — e os dois diferenciais de baixíssimo custo (link
+  público de pet perdido e reportes via QR code) estão implementados e operacionais.
+</p>
+<p>
+  Em relação ao plano inicial, todas as funcionalidades centrais foram entregues; a persistência foi simplificada
+  de SQLite para JSON em disco, e a autenticação por contas de dono foi documentada e deixada como evolução
+  futura, sem comprometer o uso standalone da aplicação.
+</p>
+
+<div class="callout">
+  <strong>Repositório:</strong>
+  <a href="https://github.com/pedroizk/pet-tracker" style="color: var(--green-dark); text-decoration: none; font-family: 'Fira Code', 'Consolas', monospace;">
+    https://github.com/pedroizk/pet-tracker
+  </a>
+</div>
+
+</body>
+</html>
